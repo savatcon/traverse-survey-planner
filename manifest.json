@@ -1,0 +1,11 @@
+{
+  "name": "トラバース測量計画",
+  "short_name": "測量計画",
+  "description": "トラバース測量計画支援システム",
+  "start_url": "./android.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#12121e",
+  "theme_color": "#12121e",
+  "icons": []
+}

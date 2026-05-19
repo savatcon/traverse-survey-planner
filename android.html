@@ -1,0 +1,1729 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#12121e">
+<title>トラバース測量計画</title>
+<link rel="manifest" href="manifest.json">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body {
+  font-family: 'Hiragino Sans', 'Noto Sans JP', 'Meiryo', sans-serif;
+  background: #12121e;
+  color: #dde3ec;
+  overflow: hidden;
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* ── CANVAS ── */
+#canvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  touch-action: none;
+  display: block;
+}
+
+/* ── TOP STATUS BAR ── */
+#topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 40px;
+  background: rgba(13,13,24,0.88);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 10px;
+  z-index: 20;
+  border-bottom: 1px solid #1e2440;
+}
+#sb-coords { font-size: 11px; color: #4a6090; font-family: monospace; }
+#sb-tool   { font-size: 11px; color: #9090a8; margin-left: auto; }
+#sb-hint   { display: none; }
+
+/* ── BOTTOM TOOLBAR ── */
+#bottombar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: rgba(13,13,24,0.94);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-top: 1px solid #1e2440;
+  z-index: 20;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Tool row (scrollable) */
+#tool-row {
+  display: flex;
+  overflow-x: auto;
+  padding: 5px 6px 4px;
+  gap: 5px;
+  scrollbar-width: none;
+}
+#tool-row::-webkit-scrollbar { display: none; }
+
+.m-tool-btn {
+  flex-shrink: 0;
+  background: #1e2338;
+  border: 1px solid #2e3555;
+  color: #6878a0;
+  padding: 7px 11px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  min-width: 48px;
+  text-align: center;
+  transition: background 0.1s;
+}
+.m-tool-btn:active { opacity: 0.7; }
+.m-tool-btn.active { background: #e84560; border-color: #e84560; color: #fff; }
+
+/* Action row */
+#action-row {
+  display: flex;
+  align-items: center;
+  padding: 0 6px 5px;
+  gap: 5px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+#action-row::-webkit-scrollbar { display: none; }
+
+.m-act-btn {
+  flex-shrink: 0;
+  background: #1e2338;
+  border: 1px solid #2e3555;
+  color: #c0c8d8;
+  padding: 6px 10px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.m-act-btn:active { opacity: 0.7; }
+.m-act-btn.green  { background: #0e2418; border-color: #27ae60; color: #2ecc71; }
+.m-act-btn.purple { background: #160d28; border-color: #7040c0; color: #a070f0; }
+.m-act-btn.teal   { background: #061c22; border-color: #1abc9c; color: #1abc9c; }
+.m-act-btn.check  { background: #101c08; border-color: #4a8a20; color: #8fc050; }
+
+.m-sel {
+  flex-shrink: 0;
+  background: #1e2338;
+  border: 1px solid #2e3555;
+  color: #c0c8d8;
+  padding: 6px 4px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-family: inherit;
+  max-width: 76px;
+}
+
+/* ── DRAWER ── */
+#drawer {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 72%;
+  max-height: 600px;
+  background: #161b2c;
+  border-top: 1px solid #2a3050;
+  border-radius: 16px 16px 0 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.32,0,0.16,1);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+#drawer.open { transform: translateY(0); }
+
+#drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0);
+  z-index: 59;
+  pointer-events: none;
+  transition: background 0.3s;
+}
+#drawer-backdrop.show {
+  background: rgba(0,0,0,0.55);
+  pointer-events: auto;
+}
+
+#drawer-grip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 12px 6px;
+  flex-shrink: 0;
+  cursor: pointer;
+  gap: 5px;
+}
+.grip-line {
+  width: 36px; height: 4px;
+  background: #2e3a54;
+  border-radius: 2px;
+}
+#drawer-info {
+  font-size: 10px;
+  color: #3a4560;
+  display: flex;
+  gap: 12px;
+}
+
+/* Tab bar in drawer */
+#m-tab-bar {
+  display: flex;
+  border-bottom: 1px solid #222840;
+  flex-shrink: 0;
+}
+.m-tab {
+  flex: 1;
+  padding: 9px 4px;
+  font-size: 12px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #3a4560;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 0.15s;
+}
+.m-tab.active { color: #e84560; border-bottom-color: #e84560; background: #1b1f30; }
+
+/* Tab panels */
+.m-tab-panel { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+.m-tab-panel.tab-active { display: flex; }
+.m-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 12px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.m-tab-hdr {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-bottom: 1px solid #1e2438;
+  flex-shrink: 0;
+  font-size: 10px;
+  color: #3a4560;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.m-tab-hdr button {
+  margin-left: auto;
+  background: #2a0c14;
+  border: 1px solid #8a2020;
+  color: #e74c3c;
+  padding: 3px 9px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* Plan / check / route cards */
+.plan-card {
+  background: #1a1f30;
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-left: 3px solid transparent;
+}
+.plan-title { font-size: 13px; font-weight: bold; margin-bottom: 3px; }
+.plan-desc  { font-size: 10px; color: #5a6580; margin-bottom: 5px; }
+.plan-stats { font-size: 10px; color: #4a6070; margin-bottom: 5px; }
+.step-row {
+  font-size: 11px;
+  padding: 2px 0 2px 10px;
+  line-height: 1.55;
+  border-left: 2px solid transparent;
+  margin: 1px 0;
+}
+.s-setup  { color: #5dade2; border-color: #1a4a6a; }
+.s-bs     { color: #8e44ad; border-color: #4a1a6a; }
+.s-obs    { color: #c8d0e0; border-color: #2a3050; }
+.s-side   { color: #e67e22; border-color: #5a2e0a; }
+.s-move   { color: #445060; font-style: italic; }
+.s-close  { color: #2ecc71; border-color: #0a4a2a; }
+.s-warn   { color: #e74c3c; border-color: #4a1a1a; }
+.s-caution{ color: #f39c12; border-color: #7a4e00; }
+.s-info   { color: #8090b0; border-color: #2a3050; }
+.quality-excellent { color: #2ecc71; }
+.quality-good      { color: #f39c12; }
+.quality-poor      { color: #e74c3c; }
+.err-box {
+  background: #200c10;
+  border: 1px solid #e74c3c44;
+  border-radius: 6px;
+  padding: 10px;
+  color: #e74c3c;
+  font-size: 11px;
+  margin-bottom: 8px;
+}
+.m-placeholder {
+  color: #2e3a50;
+  font-size: 12px;
+  text-align: center;
+  margin-top: 30px;
+  line-height: 2.1;
+}
+.route-card {
+  background: #1a1f30;
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  border-left: 3px solid transparent;
+}
+.route-header { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.route-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+.route-del {
+  margin-left: auto;
+  background: #2a0c14;
+  border: 1px solid #8a2020;
+  color: #e74c3c;
+  padding: 2px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 10px;
+  font-family: inherit;
+}
+
+/* ── MENU POPUP ── */
+#menu-popup {
+  position: fixed;
+  bottom: 0;
+  left: 0; right: 0;
+  background: #1b1f2e;
+  border-top: 1px solid #2a3050;
+  border-radius: 16px 16px 0 0;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.28s cubic-bezier(0.32,0,0.16,1);
+  padding-bottom: env(safe-area-inset-bottom, 8px);
+}
+#menu-popup.open { transform: translateY(0); }
+#menu-popup-grip {
+  display: flex; justify-content: center;
+  padding: 10px;
+  cursor: pointer;
+}
+#menu-popup button {
+  background: none;
+  border: none;
+  border-bottom: 1px solid #1e2438;
+  color: #c0c8d8;
+  padding: 14px 20px;
+  text-align: left;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+#menu-popup button:last-child { border-bottom: none; }
+#menu-popup button:active { background: #1e2438; }
+.menu-sep { height: 6px; background: #0e1020; }
+#menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 79;
+  pointer-events: none;
+  background: rgba(0,0,0,0);
+  transition: background 0.28s;
+}
+#menu-backdrop.show { pointer-events: auto; background: rgba(0,0,0,0.5); }
+
+/* ── CONFIRM BANNER ── */
+#confirm-banner {
+  display: none;
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  background: #1b1f2e;
+  border: 1px solid #e84560;
+  border-radius: 12px;
+  padding: 20px;
+  z-index: 300;
+  text-align: center;
+  min-width: 260px;
+  max-width: 90vw;
+  box-shadow: 0 8px 32px rgba(0,0,0,.7);
+}
+#confirm-msg { font-size: 14px; margin-bottom: 16px; color: #dde3ec; }
+.conf-btns { display: flex; gap: 10px; justify-content: center; }
+.btn-ok { background: #e84560; border: none; color: #fff; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 14px; }
+.btn-ng { background: #252a3e; border: 1px solid #3a4060; color: #9090a8; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 14px; }
+
+/* ── MODAL ── */
+#modal-bg {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.75);
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 200;
+}
+#modal-bg.show { display: flex; }
+.modal {
+  background: #1b1f2e;
+  border-top: 1px solid #2a3050;
+  border-radius: 16px 16px 0 0;
+  padding: 20px 20px 32px;
+  width: 100%;
+  max-width: 480px;
+}
+.modal h3 { color: #e84560; margin-bottom: 16px; font-size: 16px; }
+.fg { margin-bottom: 12px; }
+.fg label { display: block; font-size: 12px; color: #5a6580; margin-bottom: 4px; }
+.fg input {
+  width: 100%;
+  background: #252a3e;
+  border: 1px solid #3a4060;
+  color: #dde3ec;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-family: inherit;
+}
+.fg input:focus { outline: none; border-color: #5060a0; }
+.modal-btns { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+
+/* ── TOAST ── */
+#toast {
+  position: fixed;
+  top: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(30,35,55,0.95);
+  border: 1px solid #3a4060;
+  color: #dde3ec;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  z-index: 400;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+  white-space: nowrap;
+}
+#toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+
+<!-- TOP STATUS -->
+<div id="topbar">
+  <span id="sb-coords">X: ---  Y: ---</span>
+  <span id="sb-tool">選択</span>
+</div>
+
+<!-- BOTTOM TOOLBAR -->
+<div id="bottombar">
+  <div id="tool-row">
+    <button class="m-tool-btn active" id="btn-select"   onclick="setTool('select')">選択</button>
+    <button class="m-tool-btn"        id="btn-known"    onclick="setTool('known')">既知点＋</button>
+    <button class="m-tool-btn"        id="btn-new"      onclick="setTool('new')">新点＋</button>
+    <button class="m-tool-btn"        id="btn-obstruct" onclick="setTool('obstruct')">障害</button>
+    <button class="m-tool-btn"        id="btn-route"    onclick="setTool('route')">路線</button>
+    <button class="m-tool-btn"        id="btn-area"     onclick="setTool('area')">エリア</button>
+    <button class="m-tool-btn"        id="btn-delete"   onclick="setTool('delete')">削除</button>
+  </div>
+  <div id="action-row">
+    <button class="m-act-btn green"  onclick="runPlan()">▶自動</button>
+    <select id="plan-type-sel" class="m-sel">
+      <option value="結合">結合</option>
+      <option value="閉合">閉合</option>
+      <option value="放射">放射</option>
+      <option value="開放">開放</option>
+    </select>
+    <button class="m-act-btn purple" onclick="runPlanTyped()">▶指定</button>
+    <button class="m-act-btn check"  onclick="runCheck()">✔チェック</button>
+    <button class="m-act-btn"        onclick="fitView()">⊡全体</button>
+    <button class="m-act-btn"        onclick="openDrawer()">≡計画</button>
+    <button class="m-act-btn"        onclick="openMenu()">⋯</button>
+  </div>
+</div>
+
+<!-- DRAWER -->
+<div id="drawer-backdrop" onclick="closeDrawer()"></div>
+<div id="drawer">
+  <div id="drawer-grip" onclick="closeDrawer()">
+    <div class="grip-line"></div>
+    <div id="drawer-info">
+      <span id="di-pts">点: 0</span>
+      <span id="di-routes">路線: 0</span>
+      <span id="di-areas">エリア: 0</span>
+    </div>
+  </div>
+  <div id="m-tab-bar">
+    <button class="m-tab active" id="tab-btn-plan"  onclick="switchTab('plan')">自動計画</button>
+    <button class="m-tab"        id="tab-btn-route" onclick="switchTab('route')">手動路線</button>
+    <button class="m-tab"        id="tab-btn-check" onclick="switchTab('check')">チェック</button>
+  </div>
+  <!-- TAB: 自動計画 -->
+  <div class="m-tab-panel tab-active" id="tab-plan">
+    <div id="plan-scroll" class="m-scroll">
+      <div class="m-placeholder">「▶自動」ボタンを押してください</div>
+    </div>
+  </div>
+  <!-- TAB: 手動路線 -->
+  <div class="m-tab-panel" id="tab-route">
+    <div class="m-tab-hdr">
+      <span>手動路線</span>
+      <button onclick="clearRoutes()">全削除</button>
+    </div>
+    <div id="route-list" class="m-scroll">
+      <div class="m-placeholder">「路線」ツールを選び<br>既知点タップで路線を開始</div>
+    </div>
+  </div>
+  <!-- TAB: チェック -->
+  <div class="m-tab-panel" id="tab-check">
+    <div class="m-tab-hdr"><span>計画チェック</span></div>
+    <div id="check-scroll" class="m-scroll">
+      <div class="m-placeholder">「✔チェック」を押してください</div>
+    </div>
+  </div>
+</div>
+
+<!-- MENU (bottom sheet) -->
+<div id="menu-backdrop" onclick="closeMenu()"></div>
+<div id="menu-popup">
+  <div id="menu-popup-grip" onclick="closeMenu()"><div class="grip-line"></div></div>
+  <button onclick="loadSample();closeMenu()">📋 サンプルデータ</button>
+  <button onclick="clearAll();closeMenu()">🗑 全消去</button>
+  <div class="menu-sep"></div>
+  <button onclick="saveProject();closeMenu()">💾 保存（JSON）</button>
+  <button onclick="loadProject();closeMenu()">📂 読込（JSON）</button>
+  <button onclick="exportPNG();closeMenu()">🖼 画像出力（PNG）</button>
+  <button onclick="exportTXT();closeMenu()">📄 手順書出力（TXT）</button>
+</div>
+
+<!-- CONFIRM BANNER -->
+<div id="confirm-banner">
+  <div id="confirm-msg"></div>
+  <div class="conf-btns">
+    <button class="btn-ng" onclick="hideBanner()">キャンセル</button>
+    <button class="btn-ok" id="confirm-ok">OK</button>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div id="modal-bg">
+  <div class="modal">
+    <h3>既知点を追加</h3>
+    <div class="fg">
+      <label>点名</label>
+      <input id="m-label" type="text" placeholder="例: BM-1">
+    </div>
+    <div class="fg">
+      <label>X 座標（m）※ 北方向</label>
+      <input id="m-x" type="number" step="0.001" inputmode="decimal" placeholder="例: 1000.000">
+    </div>
+    <div class="fg">
+      <label>Y 座標（m）※ 東方向</label>
+      <input id="m-y" type="number" step="0.001" inputmode="decimal" placeholder="例: 500.000">
+    </div>
+    <div class="modal-btns">
+      <button class="btn-ng" onclick="closeModal()">キャンセル</button>
+      <button class="btn-ok" onclick="confirmModal()">追加</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+'use strict';
+// ═══════════════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════════════
+const S = {
+  tool: 'select',
+  points: [], obstructs: [], uid: 1,
+  vx: 0, vy: 0, scale: 60,
+  drag: null, pan: false, panS: null,
+  obstFirst: null, _mouse: null,
+  planEdges: [], planData: null,
+  manualRoutes: [], routeDraft: null, routeUid: 1,
+  areas: [], areaDraft: null, areaUid: 1,
+};
+
+// ═══════════════════════════════════════════════════════════════
+//  CANVAS
+// ═══════════════════════════════════════════════════════════════
+const canvas = document.getElementById('canvas');
+const ctx    = canvas.getContext('2d');
+
+function resize() {
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  render();
+}
+window.addEventListener('resize', resize);
+if (window.visualViewport) window.visualViewport.addEventListener('resize', resize);
+
+// ═══════════════════════════════════════════════════════════════
+//  COORDINATE TRANSFORMS (World X = East, World Y = North)
+// ═══════════════════════════════════════════════════════════════
+function w2s(wx,wy) {
+  return {
+    x:  (wx-S.vx)*S.scale + canvas.width/2,
+    y: -(wy-S.vy)*S.scale + canvas.height/2,
+  };
+}
+function s2w(sx,sy) {
+  return {
+    x:  (sx-canvas.width/2)/S.scale  + S.vx,
+    y: -((sy-canvas.height/2)/S.scale) + S.vy,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════════════════════════════
+function render() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  drawGrid();
+  drawAreas();
+  drawPlanEdges();
+  drawManualRoutes();
+  drawObstructions();
+  drawObstructPreview();
+  S.points.forEach(drawPoint);
+  drawRouteHover();
+}
+
+function drawGrid() {
+  const mpp=1/S.scale, target=mpp*80;
+  const niceSteps=[0.001,0.005,0.01,0.05,0.1,0.5,1,5,10,50,100,500,1000,5000,10000];
+  const step=niceSteps.reduce((p,c)=>Math.abs(c-target)<Math.abs(p-target)?c:p);
+  const tl=s2w(0,0), br=s2w(canvas.width,canvas.height);
+  const x0=Math.floor(Math.min(tl.x,br.x)/step)*step;
+  const x1=Math.ceil (Math.max(tl.x,br.x)/step)*step;
+  const y0=Math.floor(Math.min(tl.y,br.y)/step)*step;
+  const y1=Math.ceil (Math.max(tl.y,br.y)/step)*step;
+  ctx.save();
+  ctx.strokeStyle='#1a2040'; ctx.lineWidth=1;
+  for(let x=x0;x<=x1;x+=step){const sx=w2s(x,0).x;ctx.beginPath();ctx.moveTo(sx,0);ctx.lineTo(sx,canvas.height);ctx.stroke();}
+  for(let y=y0;y<=y1;y+=step){const sy=w2s(0,y).y;ctx.beginPath();ctx.moveTo(0,sy);ctx.lineTo(canvas.width,sy);ctx.stroke();}
+  ctx.strokeStyle='#202848'; ctx.lineWidth=1.5;
+  const o=w2s(0,0);
+  ctx.beginPath();ctx.moveTo(o.x,0);ctx.lineTo(o.x,canvas.height);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(0,o.y);ctx.lineTo(canvas.width,o.y);ctx.stroke();
+  if(S.scale>2){
+    ctx.fillStyle='#1e2840';ctx.font='9px monospace';ctx.textAlign='left';
+    for(let x=x0;x<=x1;x+=step)ctx.fillText('Y='+fmtNum(x),w2s(x,0).x+2,canvas.height-4);
+    for(let y=y0;y<=y1;y+=step)ctx.fillText('X='+fmtNum(y),3,w2s(0,y).y-2);
+  }
+  ctx.restore();
+}
+
+function fmtNum(n){
+  if(Math.abs(n)<1e-9)return'0';
+  if(Number.isInteger(n))return String(n);
+  return n.toFixed(3).replace(/\.?0+$/,'');
+}
+
+const POINT_R=9;  // slightly larger for touch
+
+function drawPlanEdges(){
+  const order=['bs','side','main'];
+  for(const kind of order){
+    for(const e of S.planEdges){
+      if(e.kind!==kind)continue;
+      const pa=byId(e.a),pb=byId(e.b);
+      if(!pa||!pb)continue;
+      const sa=w2s(pa.wx,pa.wy),sb=w2s(pb.wx,pb.wy);
+      ctx.save();
+      if(kind==='main'){
+        ctx.strokeStyle=e.color;ctx.lineWidth=3;ctx.globalAlpha=0.85;ctx.setLineDash([]);
+        ctx.beginPath();ctx.moveTo(sa.x,sa.y);ctx.lineTo(sb.x,sb.y);ctx.stroke();
+        drawArrow(sa.x,sa.y,sb.x,sb.y,e.color);
+      }else if(kind==='bs'){
+        ctx.strokeStyle='#74b9e8';ctx.lineWidth=1.5;ctx.globalAlpha=0.65;ctx.setLineDash([6,4]);
+        ctx.beginPath();ctx.moveTo(sa.x,sa.y);ctx.lineTo(sb.x,sb.y);ctx.stroke();
+        drawArrowSmall(sa.x,sa.y,sb.x,sb.y,'#74b9e8');
+        const mx=(sa.x+sb.x)/2,my=(sa.y+sb.y)/2;
+        ctx.setLineDash([]);ctx.globalAlpha=0.85;
+        ctx.fillStyle='#74b9e8';ctx.font='bold 9px sans-serif';ctx.textAlign='center';
+        ctx.shadowColor='#000';ctx.shadowBlur=3;ctx.fillText('後視',mx,my-5);
+      }else{
+        ctx.strokeStyle=e.color;ctx.lineWidth=1.5;ctx.globalAlpha=0.45;ctx.setLineDash([6,4]);
+        ctx.beginPath();ctx.moveTo(sa.x,sa.y);ctx.lineTo(sb.x,sb.y);ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }
+}
+
+function drawArrow(x1,y1,x2,y2,color){
+  const ang=Math.atan2(y2-y1,x2-x1),mx=(x1+x2)/2,my=(y1+y2)/2,L=10;
+  ctx.save();ctx.fillStyle=color;ctx.globalAlpha=0.9;ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.moveTo(mx+Math.cos(ang)*L,my+Math.sin(ang)*L);
+  ctx.lineTo(mx+Math.cos(ang+2.3)*L*0.6,my+Math.sin(ang+2.3)*L*0.6);
+  ctx.lineTo(mx+Math.cos(ang-2.3)*L*0.6,my+Math.sin(ang-2.3)*L*0.6);
+  ctx.closePath();ctx.fill();ctx.restore();
+}
+function drawArrowSmall(x1,y1,x2,y2,color){
+  const ang=Math.atan2(y2-y1,x2-x1),L=8;
+  ctx.save();ctx.fillStyle=color;ctx.globalAlpha=0.8;ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.moveTo(x2,y2);
+  ctx.lineTo(x2+Math.cos(ang+Math.PI+0.4)*L,y2+Math.sin(ang+Math.PI+0.4)*L);
+  ctx.lineTo(x2+Math.cos(ang+Math.PI-0.4)*L,y2+Math.sin(ang+Math.PI-0.4)*L);
+  ctx.closePath();ctx.fill();ctx.restore();
+}
+
+function drawManualRoutes(){
+  for(let ri=0;ri<S.manualRoutes.length;ri++){
+    const route=S.manualRoutes[ri],color=route.color;
+    for(let i=0;i<route.pts.length-1;i++){
+      const pa=byId(route.pts[i]),pb=byId(route.pts[i+1]);
+      if(!pa||!pb)continue;
+      const sa=w2s(pa.wx,pa.wy),sb=w2s(pb.wx,pb.wy);
+      const blocked=!canSee(pa.id,pb.id);
+      ctx.save();
+      ctx.strokeStyle=blocked?'#ff4444':color;ctx.lineWidth=blocked?2:2.5;
+      ctx.globalAlpha=0.85;ctx.setLineDash(blocked?[4,4]:[]);
+      ctx.beginPath();ctx.moveTo(sa.x,sa.y);ctx.lineTo(sb.x,sb.y);ctx.stroke();
+      if(!blocked)drawArrow(sa.x,sa.y,sb.x,sb.y,color);
+      ctx.restore();
+    }
+    if(route.pts.length>=2){
+      const pa=byId(route.pts[0]),pb=byId(route.pts[1]);
+      if(pa&&pb){
+        const sa=w2s(pa.wx,pa.wy),sb=w2s(pb.wx,pb.wy);
+        const mx=(sa.x+sb.x)/2,my=(sa.y+sb.y)/2;
+        ctx.save();ctx.fillStyle=color;ctx.font='bold 10px sans-serif';ctx.textAlign='center';
+        ctx.shadowColor='#000';ctx.shadowBlur=3;ctx.globalAlpha=0.9;
+        ctx.fillText('路'+(ri+1),mx,my-8);ctx.restore();
+      }
+    }
+  }
+  if(S.routeDraft&&S.routeDraft.pts.length>0){
+    ctx.save();ctx.lineWidth=2;ctx.globalAlpha=0.65;
+    for(let i=0;i<S.routeDraft.pts.length-1;i++){
+      const pa=byId(S.routeDraft.pts[i]),pb=byId(S.routeDraft.pts[i+1]);
+      if(!pa||!pb)continue;
+      const sa=w2s(pa.wx,pa.wy),sb=w2s(pb.wx,pb.wy);
+      ctx.strokeStyle=canSee(pa.id,pb.id)?'#ffffff':'#ff6666';
+      ctx.setLineDash([6,4]);
+      ctx.beginPath();ctx.moveTo(sa.x,sa.y);ctx.lineTo(sb.x,sb.y);ctx.stroke();
+    }
+    if(S._mouse&&S.routeDraft.pts.length>0){
+      const lp=byId(S.routeDraft.pts[S.routeDraft.pts.length-1]);
+      if(lp){
+        const sl=w2s(lp.wx,lp.wy);
+        ctx.strokeStyle='#888';ctx.setLineDash([3,6]);ctx.lineWidth=1.5;ctx.globalAlpha=0.4;
+        ctx.beginPath();ctx.moveTo(sl.x,sl.y);ctx.lineTo(S._mouse.x,S._mouse.y);ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+}
+
+function drawRouteHover(){
+  if(S.tool!=='route'&&S.tool!=='area')return;
+  if(!S._mouse)return;
+  if(S.tool==='route'){
+    const near=nearPoint(S._mouse.x,S._mouse.y,TOUCH_R);
+    if(near){
+      const sn=w2s(near.wx,near.wy);
+      let col='#ffffff';
+      if(S.routeDraft){
+        if(near.id===S.routeDraft.pts[0]&&S.routeDraft.pts.length>=3)col='#2ecc71';
+        else if(near.type==='known'&&near.id!==S.routeDraft.pts[0])col='#2ecc71';
+        else if(S.routeDraft.pts.includes(near.id))col='#888888';
+      }else col=near.type==='known'?'#2ecc71':'#888888';
+      ctx.save();ctx.strokeStyle=col;ctx.lineWidth=2.5;ctx.globalAlpha=0.7;
+      ctx.beginPath();ctx.arc(sn.x,sn.y,POINT_R+9,0,Math.PI*2);ctx.stroke();ctx.restore();
+    }
+  }else if(S.tool==='area'&&S.areaDraft&&S.areaDraft.pts.length>=3){
+    const first=S.areaDraft.pts[0];
+    const sf=w2s(first.wx,first.wy);
+    if(Math.hypot(S._mouse.x-sf.x,S._mouse.y-sf.y)<28){
+      ctx.save();ctx.strokeStyle='#00ff88';ctx.lineWidth=3;ctx.globalAlpha=0.85;
+      ctx.beginPath();ctx.arc(sf.x,sf.y,14,0,Math.PI*2);ctx.stroke();ctx.restore();
+    }
+  }
+}
+
+const AREA_STROKE_COLORS=['#4fc3f7','#aed581','#ffcc02','#f48fb1','#ce93d8'];
+
+function drawAreas(){
+  for(let ai=0;ai<S.areas.length;ai++){
+    drawAreaPolygon(S.areas[ai].pts,AREA_STROKE_COLORS[ai%AREA_STROKE_COLORS.length],true);
+  }
+  if(S.areaDraft&&S.areaDraft.pts.length>0){
+    drawAreaPolygon(S.areaDraft.pts,'#ffffff',false);
+    if(S._mouse){
+      const last=S.areaDraft.pts[S.areaDraft.pts.length-1];
+      const sl=w2s(last.wx,last.wy);
+      ctx.save();ctx.strokeStyle='#aaa';ctx.lineWidth=1;ctx.globalAlpha=0.35;ctx.setLineDash([4,6]);
+      ctx.beginPath();ctx.moveTo(sl.x,sl.y);ctx.lineTo(S._mouse.x,S._mouse.y);ctx.stroke();ctx.restore();
+    }
+  }
+}
+function drawAreaPolygon(pts,col,closed){
+  if(!pts.length)return;
+  ctx.save();ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.setLineDash([5,4]);ctx.globalAlpha=0.7;
+  ctx.beginPath();
+  const s0=w2s(pts[0].wx,pts[0].wy);ctx.moveTo(s0.x,s0.y);
+  for(let i=1;i<pts.length;i++){const si=w2s(pts[i].wx,pts[i].wy);ctx.lineTo(si.x,si.y);}
+  if(closed&&pts.length>=3){
+    ctx.closePath();ctx.stroke();
+    ctx.setLineDash([]);ctx.fillStyle=col;ctx.globalAlpha=0.08;ctx.fill();
+  }else ctx.stroke();
+  ctx.setLineDash([]);ctx.globalAlpha=0.8;
+  for(const pt of pts){
+    const sp=w2s(pt.wx,pt.wy);ctx.fillStyle=col;
+    ctx.beginPath();ctx.arc(sp.x,sp.y,4,0,Math.PI*2);ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawObstructions(){
+  for(const o of S.obstructs){
+    const pa=byId(o.a),pb=byId(o.b);if(!pa||!pb)continue;
+    const sa=w2s(pa.wx,pa.wy),sb=w2s(pb.wx,pb.wy);
+    ctx.save();ctx.strokeStyle='#c0392b';ctx.lineWidth=1.5;
+    ctx.setLineDash([7,4]);ctx.globalAlpha=0.55;
+    ctx.beginPath();ctx.moveTo(sa.x,sa.y);ctx.lineTo(sb.x,sb.y);ctx.stroke();
+    ctx.setLineDash([]);
+    const mx=(sa.x+sb.x)/2,my=(sa.y+sb.y)/2;
+    ctx.globalAlpha=0.8;ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(mx-6,my-6);ctx.lineTo(mx+6,my+6);
+    ctx.moveTo(mx+6,my-6);ctx.lineTo(mx-6,my+6);ctx.stroke();
+    ctx.restore();
+  }
+}
+function drawObstructPreview(){
+  if(S.tool!=='obstruct'||!S.obstFirst||!S._mouse)return;
+  const pa=byId(S.obstFirst);if(!pa)return;
+  const sa=w2s(pa.wx,pa.wy);
+  ctx.save();ctx.strokeStyle='#c0392b';ctx.lineWidth=1;ctx.globalAlpha=0.35;
+  ctx.setLineDash([6,4]);ctx.beginPath();ctx.moveTo(sa.x,sa.y);ctx.lineTo(S._mouse.x,S._mouse.y);ctx.stroke();ctx.restore();
+}
+
+function drawPoint(p){
+  const s=w2s(p.wx,p.wy);
+  ctx.save();
+  ctx.shadowColor=p.type==='known'?'#e74c3c':'#3498db';ctx.shadowBlur=12;
+  if(p.type==='known'){
+    ctx.fillStyle='#e74c3c';ctx.strokeStyle='#ff7070';ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.moveTo(s.x,s.y-POINT_R-2);ctx.lineTo(s.x+POINT_R+2,s.y+POINT_R-2);ctx.lineTo(s.x-POINT_R-2,s.y+POINT_R-2);
+    ctx.closePath();ctx.fill();ctx.stroke();
+  }else{
+    ctx.fillStyle='#2980b9';ctx.strokeStyle='#5dade2';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.arc(s.x,s.y,POINT_R,0,Math.PI*2);ctx.fill();ctx.stroke();
+  }
+  ctx.shadowBlur=0;
+  if(S.obstFirst===p.id){ctx.strokeStyle='#e84560';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(s.x,s.y,POINT_R+6,0,Math.PI*2);ctx.stroke();}
+  if(S.routeDraft&&S.routeDraft.pts[0]===p.id){ctx.strokeStyle='#a070f0';ctx.lineWidth=2;ctx.beginPath();ctx.arc(s.x,s.y,POINT_R+6,0,Math.PI*2);ctx.stroke();}
+  ctx.fillStyle='#dde3ec';ctx.font='bold 12px sans-serif';ctx.textAlign='left';
+  ctx.shadowColor='#000';ctx.shadowBlur=4;ctx.fillText(p.label,s.x+POINT_R+4,s.y+5);
+  if(p.type==='known'&&S.scale>20){
+    ctx.fillStyle='#445070';ctx.font='9px monospace';ctx.shadowBlur=0;
+    ctx.fillText(`(${p.survX.toFixed(1)},${p.survY.toFixed(1)})`,s.x+POINT_R+4,s.y+16);
+  }
+  ctx.restore();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  TOOL MANAGEMENT
+// ═══════════════════════════════════════════════════════════════
+const TOOL_LABELS={
+  select:'選択',known:'既知点追加',new:'新点追加',
+  obstruct:'視通障害',delete:'削除',route:'手動路線追加',area:'観測エリア'
+};
+
+function setTool(t){
+  if(t!=='route')    S.routeDraft=null;
+  if(t!=='area')     S.areaDraft=null;
+  if(t!=='obstruct') S.obstFirst=null;
+  S.tool=t;
+  document.querySelectorAll('.m-tool-btn').forEach(b=>b.classList.remove('active'));
+  const b=document.getElementById('btn-'+t);if(b)b.classList.add('active');
+  document.getElementById('sb-tool').textContent=TOOL_LABELS[t]||t;
+  render();
+}
+
+function switchTab(name){
+  ['plan','route','check'].forEach(t=>{
+    const panel=document.getElementById('tab-'+t);
+    const btn  =document.getElementById('tab-btn-'+t);
+    const active=(t===name);
+    panel.classList.toggle('tab-active',active);
+    if(btn)btn.classList.toggle('active',active);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  DRAWER / MENU
+// ═══════════════════════════════════════════════════════════════
+function openDrawer(){
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('drawer-backdrop').classList.add('show');
+}
+function closeDrawer(){
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('drawer-backdrop').classList.remove('show');
+}
+function openMenu(){
+  document.getElementById('menu-popup').classList.add('open');
+  document.getElementById('menu-backdrop').classList.add('show');
+}
+function closeMenu(){
+  document.getElementById('menu-popup').classList.remove('open');
+  document.getElementById('menu-backdrop').classList.remove('show');
+}
+function updateDrawerInfo(){
+  document.getElementById('di-pts').textContent='点: '+S.points.length;
+  document.getElementById('di-routes').textContent='路線: '+S.manualRoutes.length;
+  document.getElementById('di-areas').textContent='エリア: '+S.areas.length;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  TOUCH HANDLING
+// ═══════════════════════════════════════════════════════════════
+const TOUCH_R = 30; // larger hit radius for touch
+
+let _touch = {id:null,sx0:0,sy0:0,clientX0:0,clientY0:0,moved:false,pointDrag:null,panStart:null};
+let _pinch  = null; // {dist0,scale0,midSX0,midSY0,vx0,vy0}
+
+canvas.addEventListener('touchstart', e=>{
+  e.preventDefault();
+  closeMenu();
+  const r=canvas.getBoundingClientRect();
+
+  if(e.touches.length===1&&!_pinch){
+    const t=e.touches[0];
+    const sx=t.clientX-r.left, sy=t.clientY-r.top;
+    _touch={id:t.identifier,sx0:sx,sy0:sy,clientX0:t.clientX,clientY0:t.clientY,moved:false,pointDrag:null,panStart:null};
+    S._mouse={x:sx,y:sy};
+
+    if(S.tool==='select'){
+      const p=nearPoint(sx,sy,TOUCH_R);
+      if(p) _touch.pointDrag={p,ox:p.wx,oy:p.wy};
+    }
+    render();
+
+  }else if(e.touches.length===2){
+    _touch.moved=true; _touch.pointDrag=null; S.drag=null;
+    const t0=e.touches[0],t1=e.touches[1];
+    const mx=(t0.clientX+t1.clientX)/2-r.left;
+    const my=(t0.clientY+t1.clientY)/2-r.top;
+    _pinch={
+      dist0:Math.hypot(t0.clientX-t1.clientX,t0.clientY-t1.clientY),
+      scale0:S.scale, midSX0:mx, midSY0:my, vx0:S.vx, vy0:S.vy,
+    };
+  }
+},{passive:false});
+
+canvas.addEventListener('touchmove', e=>{
+  e.preventDefault();
+  const r=canvas.getBoundingClientRect();
+
+  if(e.touches.length===2&&_pinch){
+    const t0=e.touches[0],t1=e.touches[1];
+    const curDist=Math.hypot(t0.clientX-t1.clientX,t0.clientY-t1.clientY);
+    const curMSX=(t0.clientX+t1.clientX)/2-r.left;
+    const curMSY=(t0.clientY+t1.clientY)/2-r.top;
+    // World point that was under initial pinch center
+    const p0={x:(_pinch.midSX0-canvas.width/2)/_pinch.scale0+_pinch.vx0,
+               y:-((_pinch.midSY0-canvas.height/2)/_pinch.scale0)+_pinch.vy0};
+    S.scale=Math.max(0.3,Math.min(10000,_pinch.scale0*curDist/_pinch.dist0));
+    // Place p0 under current midpoint, then shift for pan
+    S.vx=p0.x-(curMSX-canvas.width/2)/S.scale;
+    S.vy=p0.y+(curMSY-canvas.height/2)/S.scale;
+    // Additional pan from midpoint movement
+    const panDX=(curMSX-_pinch.midSX0)/S.scale;
+    const panDY=-(curMSY-_pinch.midSY0)/S.scale;
+    S.vx-=panDX; S.vy-=panDY;
+    _pinch.midSX0=curMSX; _pinch.midSY0=curMSY; // incremental pan
+    render();
+    return;
+  }
+
+  if(e.touches.length===1&&!_pinch){
+    const t=[...e.touches].find(t=>t.identifier===_touch.id);
+    if(!t)return;
+    const sx=t.clientX-r.left,sy=t.clientY-r.top;
+    S._mouse={x:sx,y:sy};
+    if(Math.hypot(sx-_touch.sx0,sy-_touch.sy0)>8)_touch.moved=true;
+
+    if(_touch.pointDrag&&_touch.moved){
+      const {p,ox,oy}=_touch.pointDrag;
+      const dx=(sx-_touch.sx0)/S.scale, dy=-(sy-_touch.sy0)/S.scale;
+      p.wx=ox+dx; p.wy=oy+dy;
+      render();
+    }else if(_touch.moved&&!_touch.pointDrag){
+      if(!_touch.panStart)_touch.panStart={cx:t.clientX,cy:t.clientY,vx:S.vx,vy:S.vy};
+      const dx=(t.clientX-_touch.panStart.cx)/S.scale;
+      const dy=-(t.clientY-_touch.panStart.cy)/S.scale;
+      S.vx=_touch.panStart.vx-dx; S.vy=_touch.panStart.vy-dy;
+      render();
+    }
+
+    const w=s2w(sx,sy);
+    document.getElementById('sb-coords').textContent=`X:${w.y.toFixed(1)}  Y:${w.x.toFixed(1)}`;
+    if((S.tool==='route'&&S.routeDraft)||(S.tool==='area'&&S.areaDraft)||(S.tool==='obstruct'&&S.obstFirst))render();
+  }
+},{passive:false});
+
+canvas.addEventListener('touchend', e=>{
+  e.preventDefault();
+  if(e.touches.length<2)_pinch=null;
+
+  if(e.touches.length===0){
+    const t=[...e.changedTouches].find(t=>t.identifier===_touch.id);
+    if(t&&!_touch.moved){
+      const r=canvas.getBoundingClientRect();
+      executeTap(t.clientX-r.left, t.clientY-r.top);
+    }
+    if(_touch.pointDrag&&_touch.moved)refreshList();
+    _touch.pointDrag=null; _touch.panStart=null;
+  }
+},{passive:false});
+
+function executeTap(sx,sy){
+  const w=s2w(sx,sy);
+
+  if(S.tool==='select'){
+    // tap selects / centers — drag handled above
+  }else if(S.tool==='known'){
+    openModal(w.y,w.x);
+  }else if(S.tool==='new'){
+    addNewPoint(w.x,w.y,'P-'+S.uid);
+    showToast('新点 P-'+(S.uid-1)+' を追加');
+  }else if(S.tool==='obstruct'){
+    const p=nearPoint(sx,sy,TOUCH_R);
+    if(p){
+      if(!S.obstFirst){ S.obstFirst=p.id; showToast('1点目: '+p.label+' — 2点目をタップ'); }
+      else if(S.obstFirst!==p.id){
+        toggleObstruct(S.obstFirst,p.id); S.obstFirst=null;
+      }
+    }
+  }else if(S.tool==='route'){
+    const p=nearPoint(sx,sy,TOUCH_R);
+    if(!S.routeDraft){
+      if(p&&p.type==='known'){ S.routeDraft={pts:[p.id]}; showToast(p.label+' から路線開始'); }
+      else showToast('既知点をタップして路線を開始');
+    }else{
+      if(p){
+        const draft=S.routeDraft;
+        const isStart=p.id===draft.pts[0];
+        const already=draft.pts.includes(p.id);
+        if(isStart&&draft.pts.length>=3){ draft.pts.push(p.id); finalizeRoute(); }
+        else if(!already&&p.type==='known'&&!isStart){ draft.pts.push(p.id); finalizeRoute(); }
+        else if(!already&&p.type==='new'){ draft.pts.push(p.id); showToast(p.label+' → 次の点をタップ'); }
+        else if(already&&!isStart) showToast('既に含まれています');
+      }else showToast('点をタップして路線を延長');
+    }
+  }else if(S.tool==='area'){
+    if(!S.areaDraft){
+      S.areaDraft={pts:[{wx:w.x,wy:w.y}]};
+      showToast('エリア開始 — タップで頂点追加');
+    }else{
+      const dpts=S.areaDraft.pts;
+      const first=dpts[0],sf=w2s(first.wx,first.wy);
+      if(dpts.length>=3&&Math.hypot(sx-sf.x,sy-sf.y)<28){
+        S.areas.push({id:S.areaUid++,pts:[...dpts]});
+        S.areaDraft=null; updateDrawerInfo();
+        showToast('観測エリアを確定');
+      }else{
+        dpts.push({wx:w.x,wy:w.y});
+        showToast(dpts.length+'点目 — 始点付近でタップして閉合');
+      }
+    }
+  }else if(S.tool==='delete'){
+    const p=nearPoint(sx,sy,TOUCH_R);
+    if(p){ deletePoint(p.id); showToast(p.label+' を削除'); }
+    else{
+      const o=nearObstruct(sx,sy,16);
+      if(o){ S.obstructs=S.obstructs.filter(x=>x!==o); invalidatePlan(); showToast('障害ラインを削除'); }
+      else{
+        const a=nearArea(sx,sy,16);
+        if(a){ S.areas=S.areas.filter(x=>x.id!==a.id); updateDrawerInfo(); showToast('エリアを削除'); }
+      }
+    }
+  }
+  render();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════════════════════════
+let _toastTimer=null;
+function showToast(msg,dur=1800){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>el.classList.remove('show'),dur);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  HIT TESTING
+// ═══════════════════════════════════════════════════════════════
+function nearPoint(sx,sy,r=TOUCH_R){
+  let best=null,bd=Infinity;
+  for(const p of S.points){
+    const s=w2s(p.wx,p.wy),d=Math.hypot(s.x-sx,s.y-sy);
+    if(d<r&&d<bd){bd=d;best=p;}
+  }
+  return best;
+}
+function nearObstruct(sx,sy,thr=12){
+  for(const o of S.obstructs){
+    const pa=byId(o.a),pb=byId(o.b);if(!pa||!pb)continue;
+    const sa=w2s(pa.wx,pa.wy),sb=w2s(pb.wx,pb.wy);
+    if(ptSegDist(sx,sy,sa.x,sa.y,sb.x,sb.y)<thr)return o;
+  }
+  return null;
+}
+function nearArea(sx,sy,thr=12){
+  for(const area of S.areas){
+    const pts=area.pts;
+    for(let i=0;i<pts.length;i++){
+      const j=(i+1)%pts.length;
+      const sa=w2s(pts[i].wx,pts[i].wy),sb=w2s(pts[j].wx,pts[j].wy);
+      if(ptSegDist(sx,sy,sa.x,sa.y,sb.x,sb.y)<thr)return area;
+    }
+  }
+  return null;
+}
+function ptSegDist(px,py,x1,y1,x2,y2){
+  const dx=x2-x1,dy=y2-y1,lsq=dx*dx+dy*dy;
+  if(lsq===0)return Math.hypot(px-x1,py-y1);
+  const t=Math.max(0,Math.min(1,((px-x1)*dx+(py-y1)*dy)/lsq));
+  return Math.hypot(px-(x1+t*dx),py-(y1+t*dy));
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MODAL
+// ═══════════════════════════════════════════════════════════════
+let _modalX=0,_modalY=0;
+function modalOpen(){return document.getElementById('modal-bg').classList.contains('show');}
+function openModal(survX,survY){
+  _modalX=survX;_modalY=survY;
+  document.getElementById('m-label').value='BM-'+S.uid;
+  document.getElementById('m-x').value=survX.toFixed(3);
+  document.getElementById('m-y').value=survY.toFixed(3);
+  document.getElementById('modal-bg').classList.add('show');
+  setTimeout(()=>document.getElementById('m-label').focus(),100);
+}
+function closeModal(){document.getElementById('modal-bg').classList.remove('show');}
+function confirmModal(){
+  const lbl=document.getElementById('m-label').value.trim()||('BM-'+S.uid);
+  const sx=parseFloat(document.getElementById('m-x').value);
+  const sy=parseFloat(document.getElementById('m-y').value);
+  if(isNaN(sx)||isNaN(sy)){showToast('座標を数値で入力してください');return;}
+  addKnownPoint(sx,sy,lbl);closeModal();
+}
+document.getElementById('modal-bg').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
+
+// ═══════════════════════════════════════════════════════════════
+//  DATA OPS
+// ═══════════════════════════════════════════════════════════════
+function byId(id){return S.points.find(p=>p.id===id);}
+function canSee(a,b){return!S.obstructs.some(o=>(o.a===a&&o.b===b)||(o.a===b&&o.b===a));}
+function wdist(pa,pb){return Math.hypot(pa.wx-pb.wx,pa.wy-pb.wy);}
+
+function addKnownPoint(survX,survY,label){
+  S.points.push({id:S.uid++,type:'known',label,wx:survY,wy:survX,survX,survY});
+  invalidatePlan();refreshList();fitView();showToast(label+' を追加');
+}
+function addNewPoint(wx,wy,label){
+  S.points.push({id:S.uid++,type:'new',label,wx,wy,survX:null,survY:null});
+  invalidatePlan();refreshList();render();
+}
+function toggleObstruct(a,b){
+  const i=S.obstructs.findIndex(o=>(o.a===a&&o.b===b)||(o.a===b&&o.b===a));
+  if(i>=0){S.obstructs.splice(i,1);showToast('障害ラインを解除');}
+  else{S.obstructs.push({a,b});showToast('視通障害を設定');}
+  invalidatePlan();
+}
+function deletePoint(id){
+  S.points=S.points.filter(p=>p.id!==id);
+  S.obstructs=S.obstructs.filter(o=>o.a!==id&&o.b!==id);
+  S.manualRoutes=S.manualRoutes.filter(r=>!r.pts.includes(id));
+  invalidatePlan();refreshList();updateRouteList();updateDrawerInfo();render();
+}
+function invalidatePlan(){
+  S.planEdges=[];
+  document.getElementById('plan-scroll').innerHTML=
+    '<div class="m-placeholder">計画が無効化されました<br>「▶自動」を再実行してください</div>';
+}
+function clearAll(force=false){
+  const hasData=S.points.length>0||S.manualRoutes.length>0||S.areas.length>0;
+  if(!force&&hasData){showConfirmBanner('全ての点・路線・エリアを消去しますか？',()=>clearAll(true));return;}
+  S.points=[];S.obstructs=[];S.planEdges=[];S.uid=1;S.obstFirst=null;
+  S.manualRoutes=[];S.routeDraft=null;S.routeUid=1;
+  S.areas=[];S.areaDraft=null;S.areaUid=1;
+  hideBanner();refreshList();updateRouteList();updateDrawerInfo();
+  document.getElementById('plan-scroll').innerHTML='<div class="m-placeholder">「▶自動」ボタンを押してください</div>';
+  document.getElementById('check-scroll').innerHTML='<div class="m-placeholder">「✔チェック」を押してください</div>';
+  render();
+}
+function clearRoutes(){
+  if(!S.manualRoutes.length)return;
+  showConfirmBanner('全ての手動路線を消去しますか？',()=>{
+    S.manualRoutes=[];S.routeDraft=null;S.routeUid=1;
+    hideBanner();updateRouteList();updateDrawerInfo();render();
+  });
+}
+
+function refreshList(){updateDrawerInfo();}
+
+function fitView(){
+  if(canvas.width===0||canvas.height===0)resize();
+  const allPts=[...S.points,...S.areas.flatMap(a=>a.pts.map(pt=>({wx:pt.wx,wy:pt.wy})))];
+  if(!allPts.length){S.vx=0;S.vy=0;S.scale=60;render();return;}
+  const xs=allPts.map(p=>p.wx),ys=allPts.map(p=>p.wy);
+  const minX=Math.min(...xs),maxX=Math.max(...xs);
+  const minY=Math.min(...ys),maxY=Math.max(...ys);
+  S.vx=(minX+maxX)/2;S.vy=(minY+maxY)/2;
+  const rx=maxX-minX||20,ry=maxY-minY||20;
+  const cw=Math.max(canvas.width,200),ch=Math.max(canvas.height,200);
+  S.scale=Math.min(cw*.65/rx,ch*.65/ry,800);
+  S.scale=Math.max(S.scale,1);
+  render();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  GRAPH HELPERS
+// ═══════════════════════════════════════════════════════════════
+function buildAdj(){
+  const adj=new Map(S.points.map(p=>[p.id,new Set()]));
+  for(let i=0;i<S.points.length;i++)for(let j=i+1;j<S.points.length;j++){
+    const a=S.points[i],b=S.points[j];
+    if(canSee(a.id,b.id)){adj.get(a.id).add(b.id);adj.get(b.id).add(a.id);}
+  }
+  return adj;
+}
+function findTraversePath(startId,endId,adj){
+  const dist=new Map(),par=new Map();
+  for(const p of S.points)dist.set(p.id,Infinity);
+  dist.set(startId,0);par.set(startId,null);
+  const visited=new Set(),pq=[[0,startId]];
+  while(pq.length>0){
+    pq.sort((a,b)=>a[0]-b[0]);
+    const[d,cur]=pq.shift();
+    if(visited.has(cur))continue;visited.add(cur);if(cur===endId)break;
+    const curPt=byId(cur);
+    for(const nb of(adj.get(cur)||[])){
+      if(visited.has(nb))continue;
+      const nbPt=byId(nb);
+      let cost=wdist(curPt,nbPt);
+      if(curPt.type==='known'&&nbPt.type==='known')cost*=1000;
+      const nd=d+cost;
+      if(nd<(dist.get(nb)||Infinity)){dist.set(nb,nd);par.set(nb,cur);pq.push([nd,nb]);}
+    }
+  }
+  if(!par.has(endId))return null;
+  const path=[];let cur=endId;while(cur!==null){path.unshift(cur);cur=par.get(cur);}
+  return path.length>=2?path:null;
+}
+function bfsComponent(startId,adj){
+  const comp=new Set([startId]),q=[startId];
+  while(q.length){const cur=q.shift();for(const nb of(adj.get(cur)||[])){if(!comp.has(nb)){comp.add(nb);q.push(nb);}}}
+  return comp;
+}
+function findBestLoop(startId,newIds,adj,maxD=15){
+  let best=null,bestCov=0;const newSet=new Set(newIds);
+  function dfs(cur,path,vis){
+    if(path.length>maxD)return;
+    for(const nb of(adj.get(cur)||[])){
+      if(nb===startId&&path.length>2){const cov=path.filter(x=>newSet.has(x)).length;if(cov>bestCov){bestCov=cov;best=[...path,startId];}continue;}
+      if(!vis.has(nb)&&newSet.has(nb)){vis.add(nb);dfs(nb,[...path,nb],vis);vis.delete(nb);}
+    }
+  }
+  dfs(startId,[startId],new Set([startId]));return best;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  AUTO PLANNING
+// ═══════════════════════════════════════════════════════════════
+const PLAN_COLORS=['#f39c12','#2ecc71','#9b59b6','#1abc9c','#e67e22','#3498db'];
+
+function runPlan(){
+  const knownPts=S.points.filter(p=>p.type==='known');
+  const newPts  =S.points.filter(p=>p.type==='new');
+  if(!knownPts.length){showToast('既知点がありません');return;}
+  if(!newPts.length)  {showToast('新点がありません');return;}
+  const adj=buildAdj();
+  const visitedGlobal=new Set(),components=[];
+  for(const kp of knownPts){
+    if(visitedGlobal.has(kp.id))continue;
+    const comp=bfsComponent(kp.id,adj);comp.forEach(id=>visitedGlobal.add(id));
+    components.push([...comp].map(id=>byId(id)).filter(Boolean));
+  }
+  const isolated=newPts.filter(p=>!visitedGlobal.has(p.id));
+  S.planEdges=[];S.planData=[];const planCards=[];
+  components.forEach((comp,ci)=>{
+    const color=PLAN_COLORS[ci%PLAN_COLORS.length];
+    const compKnown=comp.filter(p=>p.type==='known'),compNew=comp.filter(p=>p.type==='new');
+    if(!compNew.length)return;
+    const result=planComponent(compKnown,compNew,adj,color);
+    result.edges.forEach(e=>S.planEdges.push(e));S.planData.push(result);planCards.push(renderPlanCard(result,color));
+  });
+  let html=`<div class="plan-card" style="border-color:#2ecc71;background:#0d2018;">
+    <div style="color:#2ecc71;font-weight:bold;font-size:12px;margin-bottom:3px;">▶ 自動計画完了</div>
+    <div style="color:#5a8060;font-size:10px;">既知点:${knownPts.length}  新点:${newPts.length}  障害:${S.obstructs.length}</div></div>`;
+  html+=planCards.join('');
+  if(isolated.length)html+=`<div class="err-box">⚠ 孤立点: ${isolated.map(p=>p.label).join(', ')}</div>`;
+  document.getElementById('plan-scroll').innerHTML=html;
+  switchTab('plan');openDrawer();render();
+}
+
+function runPlanTyped(){
+  const type=document.getElementById('plan-type-sel').value;
+  const knownPts=S.points.filter(p=>p.type==='known'),newPts=S.points.filter(p=>p.type==='new');
+  if(!knownPts.length){showToast('既知点がありません');return;}
+  if(!newPts.length)  {showToast('新点がありません');return;}
+  const adj=buildAdj();
+  const visitedGlobal=new Set(),components=[];
+  for(const kp of knownPts){
+    if(visitedGlobal.has(kp.id))continue;
+    const comp=bfsComponent(kp.id,adj);comp.forEach(id=>visitedGlobal.add(id));
+    components.push([...comp].map(id=>byId(id)).filter(Boolean));
+  }
+  S.planEdges=[];S.planData=[];const planCards=[];
+  components.forEach((comp,ci)=>{
+    const color=PLAN_COLORS[ci%PLAN_COLORS.length];
+    const compKnown=comp.filter(p=>p.type==='known'),compNew=comp.filter(p=>p.type==='new');
+    if(!compNew.length)return;
+    const result=planComponentForced(type,compKnown,compNew,adj,color);
+    result.edges.forEach(e=>S.planEdges.push(e));S.planData.push(result);planCards.push(renderPlanCard(result,color));
+  });
+  const typeLabel={結合:'結合トラバース',閉合:'閉合トラバース',放射:'放射トラバース',開放:'開放トラバース'}[type]||type;
+  const hcol={結合:'#2ecc71',閉合:'#3498db',放射:'#1abc9c',開放:'#e74c3c'}[type]||'#9b59b6';
+  let html=`<div class="plan-card" style="border-color:${hcol};background:#0d1020;">
+    <div style="color:${hcol};font-weight:bold;font-size:12px;margin-bottom:3px;">▶ ${typeLabel} 指定計画</div>
+    <div style="color:#4a6060;font-size:10px;">既知点:${knownPts.length}  新点:${newPts.length}</div></div>`;
+  html+=planCards.join('');
+  document.getElementById('plan-scroll').innerHTML=html;
+  switchTab('plan');openDrawer();render();
+}
+
+function planComponent(knownPts,newPts,adj,color){
+  const covered=new Set(),edges=[],subplans=[];
+  if(knownPts.length>=2){
+    let bestPath=null,bestCov=0;
+    for(let i=0;i<knownPts.length;i++)for(let j=i+1;j<knownPts.length;j++){
+      const path=findTraversePath(knownPts[i].id,knownPts[j].id,adj);if(!path)continue;
+      const cov=path.filter(id=>byId(id)&&byId(id).type==='new').length;
+      if(!bestPath||cov>bestCov||(cov===bestCov&&path.length<bestPath.path.length)){bestCov=cov;bestPath={path,kp1:knownPts[i],kp2:knownPts[j]};}
+    }
+    if(bestPath){const sp=buildConnecting(bestPath.kp1,bestPath.kp2,bestPath.path,newPts,adj,color);sp.coveredIds.forEach(id=>covered.add(id));sp.edges.forEach(e=>edges.push(e));subplans.push(sp);}
+  }
+  const rem1=newPts.filter(p=>!covered.has(p.id));
+  if(rem1.length>=1){
+    for(const kp of knownPts){
+      const loop=findBestLoop(kp.id,rem1.map(p=>p.id),adj);
+      if(loop&&loop.filter(id=>byId(id)&&byId(id).type==='new').length>0){
+        const sp=buildClosed(kp,loop,rem1,adj,'#9b59b6');sp.coveredIds.forEach(id=>covered.add(id));sp.edges.forEach(e=>edges.push(e));subplans.push(sp);break;
+      }
+    }
+  }
+  const rem2=newPts.filter(p=>!covered.has(p.id));
+  const radTargets=rem2.filter(np=>knownPts.some(kp=>(adj.get(np.id)||new Set()).has(kp.id)));
+  if(radTargets.length>0){const sp=buildRadiation(knownPts,radTargets,adj,'#1abc9c');sp.coveredIds.forEach(id=>covered.add(id));sp.edges.forEach(e=>edges.push(e));subplans.push(sp);}
+  const rem3=newPts.filter(p=>!covered.has(p.id));
+  if(rem3.length>0){const sp=buildOpen(knownPts,rem3,adj,'#e74c3c');sp.coveredIds.forEach(id=>covered.add(id));sp.edges.forEach(e=>edges.push(e));subplans.push(sp);}
+  return{subplans,edges,uncovered:newPts.filter(p=>!covered.has(p.id))};
+}
+
+function planComponentForced(type,knownPts,newPts,adj,color){
+  const covered=new Set(),edges=[],subplans=[];
+  if(type==='結合'){
+    if(knownPts.length<2){subplans.push({type:'結合トラバース',quality:'poor',color:'#e74c3c',desc:'既知点が2点以上必要です',totalDist:0,steps:[{t:'warn',txt:'既知点を追加してください'}],edges:[],coveredIds:new Set(),stationCount:0});}
+    else{
+      let pass=0;
+      while(pass++<20){
+        const rem=newPts.filter(p=>!covered.has(p.id));if(!rem.length)break;
+        let bestPath=null,bestCov=0;
+        for(let i=0;i<knownPts.length;i++)for(let j=i+1;j<knownPts.length;j++){
+          const path=findTraversePath(knownPts[i].id,knownPts[j].id,adj);if(!path)continue;
+          const pathSet=new Set(path);
+          const cov=path.filter(id=>!covered.has(id)&&byId(id)?.type==='new').length
+                   +rem.filter(np=>!pathSet.has(np.id)&&path.some(stId=>(adj.get(np.id)||new Set()).has(stId))).length;
+          if(cov>bestCov){bestCov=cov;bestPath={path,kp1:knownPts[i],kp2:knownPts[j]};}
+        }
+        if(!bestPath||bestCov===0)break;
+        const c=PLAN_COLORS[subplans.length%PLAN_COLORS.length];
+        const sp=buildConnecting(bestPath.kp1,bestPath.kp2,bestPath.path,rem,adj,c);
+        sp.coveredIds.forEach(id=>covered.add(id));sp.edges.forEach(e=>edges.push(e));subplans.push(sp);
+      }
+      if(!subplans.length)subplans.push({type:'結合トラバース',quality:'poor',color:'#e74c3c',desc:'有効な結合路線がありません',totalDist:0,steps:[{t:'warn',txt:'視通障害を確認してください'}],edges:[],coveredIds:new Set(),stationCount:0});
+    }
+  }else if(type==='閉合'){
+    let pass=0;
+    while(pass++<20){
+      const rem=newPts.filter(p=>!covered.has(p.id));if(!rem.length)break;
+      let bestLoop=null,bestKp=null,bestCov=0;
+      for(const kp of knownPts){
+        const loop=findBestLoop(kp.id,rem.map(p=>p.id),adj);if(!loop)continue;
+        const loopSet=new Set(loop);
+        const cov=rem.filter(p=>loopSet.has(p.id)).length+rem.filter(np=>!loopSet.has(np.id)&&loop.some(stId=>(adj.get(np.id)||new Set()).has(stId))).length;
+        if(cov>bestCov){bestCov=cov;bestLoop=loop;bestKp=kp;}
+      }
+      if(!bestLoop||bestCov===0)break;
+      const c=PLAN_COLORS[subplans.length%PLAN_COLORS.length];
+      const sp=buildClosed(bestKp,bestLoop,rem,adj,c);
+      sp.coveredIds.forEach(id=>covered.add(id));sp.edges.forEach(e=>edges.push(e));subplans.push(sp);
+    }
+    if(!subplans.length)subplans.push({type:'閉合トラバース',quality:'poor',color:'#e74c3c',desc:'閉合ループを構成できません',totalDist:0,steps:[{t:'warn',txt:'新点配置・視通障害を確認してください'}],edges:[],coveredIds:new Set(),stationCount:0});
+  }else if(type==='放射'){
+    const sp=buildRadiation(knownPts,newPts,adj,color);sp.coveredIds.forEach(id=>covered.add(id));sp.edges.forEach(e=>edges.push(e));subplans.push(sp);
+  }else{
+    const sp=buildOpen(knownPts,newPts,adj,color);sp.coveredIds.forEach(id=>covered.add(id));sp.edges.forEach(e=>edges.push(e));subplans.push(sp);
+  }
+  return{subplans,edges,uncovered:newPts.filter(p=>!covered.has(p.id))};
+}
+
+function buildConnecting(kp1,kp2,path,allNew,adj,color){
+  const edges=[],steps=[],coveredIds=new Set();let totalDist=0;
+  for(let i=0;i<path.length-1;i++){const pa=byId(path[i]),pb=byId(path[i+1]);if(pa&&pb){totalDist+=wdist(pa,pb);edges.push({a:path[i],b:path[i+1],kind:'main',color});}coveredIds.add(path[i]);coveredIds.add(path[i+1]);}
+  const sideShots=[];
+  for(const np of allNew){if(coveredIds.has(np.id))continue;for(const stId of path){if((adj.get(np.id)||new Set()).has(stId)){sideShots.push({np,stId});coveredIds.add(np.id);edges.push({a:stId,b:np.id,kind:'side',color:'#f39c12'});break;}}}
+  const bsCands=S.points.filter(p=>p.type==='known'&&p.id!==kp1.id&&p.id!==kp2.id&&(adj.get(kp1.id)||new Set()).has(p.id));
+  const bsPt=bsCands[0]||(((adj.get(kp1.id)||new Set()).has(kp2.id))?kp2:null);
+  if(bsPt)edges.push({a:kp1.id,b:bsPt.id,kind:'bs',color:'#74b9e8'});
+  let n=1;
+  steps.push({t:'setup',txt:`【${kp1.label}】に器械据付`});
+  if(bsPt)steps.push({t:'bs',txt:`後視: ${bsPt.label} → 角度ゼロセット`});
+  else steps.push({t:'warn',txt:`後視点なし ⚠`});
+  for(let i=0;i<path.length-1;i++){
+    const cur=byId(path[i]),nxt=byId(path[i+1]);if(!cur||!nxt)continue;
+    const d=wdist(cur,nxt);
+    if(nxt.type==='known'&&i===path.length-2)steps.push({t:'close',txt:`${n++}. 終点【${nxt.label}】 (概距 ${d.toFixed(1)}m) → 閉合差算出`});
+    else steps.push({t:'obs',txt:`${n++}. 前視: ${nxt.label} (概距 ${d.toFixed(1)}m)`});
+    const ss=sideShots.filter(s=>s.stId===path[i]);
+    for(const s of ss)steps.push({t:'side',txt:`${n++}. 放射: ${s.np.label} (概距 ${wdist(cur,s.np).toFixed(1)}m)`});
+    if(i<path.length-2){steps.push({t:'move',txt:`↓ 【${nxt.label}】へ移動`});steps.push({t:'bs',txt:`後視: ${cur.label}`});}
+  }
+  const cl=path.slice(1,-1).map(id=>byId(id)?.label||'?').join('→');
+  return{type:'結合トラバース',quality:'excellent',color,desc:cl?`${kp1.label}→${cl}→${kp2.label}`:`${kp1.label}→${kp2.label}`,totalDist,steps,edges,coveredIds,stationCount:path.length};
+}
+function buildClosed(kp,loop,allNew,adj,color){
+  const edges=[],steps=[],coveredIds=new Set();let totalDist=0;
+  loop.forEach(id=>coveredIds.add(id));
+  for(let i=0;i<loop.length-1;i++){const pa=byId(loop[i]),pb=byId(loop[i+1]);if(pa&&pb){totalDist+=wdist(pa,pb);edges.push({a:loop[i],b:loop[i+1],kind:'main',color});}}
+  const sideShots=[];
+  for(const np of allNew){if(coveredIds.has(np.id))continue;for(const stId of loop){if((adj.get(np.id)||new Set()).has(stId)){sideShots.push({np,stId});coveredIds.add(np.id);edges.push({a:stId,b:np.id,kind:'side',color:'#f39c12'});break;}}}
+  const bsCands=S.points.filter(p=>p.type==='known'&&p.id!==kp.id&&(adj.get(kp.id)||new Set()).has(p.id));
+  const bsPt=bsCands[0]||null;if(bsPt)edges.push({a:kp.id,b:bsPt.id,kind:'bs',color:'#74b9e8'});
+  let n=1;
+  steps.push({t:'setup',txt:`【${kp.label}】に器械据付（閉合起点）`});
+  if(bsPt)steps.push({t:'bs',txt:`後視: ${bsPt.label} → 角度ゼロセット`});else steps.push({t:'warn',txt:`後視点なし ⚠`});
+  for(let i=0;i<loop.length-1;i++){
+    const cur=byId(loop[i]),nxt=byId(loop[i+1]);if(!cur||!nxt)continue;
+    const d=wdist(cur,nxt);
+    if(nxt.id===kp.id)steps.push({t:'close',txt:`${n++}. 閉合: 【${kp.label}】 (概距 ${d.toFixed(1)}m)`});
+    else steps.push({t:'obs',txt:`${n++}. 前視: ${nxt.label} (概距 ${d.toFixed(1)}m)`});
+    const ss=sideShots.filter(s=>s.stId===loop[i]);
+    for(const s of ss)steps.push({t:'side',txt:`${n++}. 放射: ${s.np.label} (概距 ${wdist(cur,s.np).toFixed(1)}m)`});
+    if(i<loop.length-2){steps.push({t:'move',txt:`↓ 【${nxt.label}】へ移動`});steps.push({t:'bs',txt:`後視: ${cur.label}`});}
+  }
+  const ln=loop.slice(1,-1).map(id=>byId(id)?.label||'?').join('→');
+  return{type:'閉合トラバース',quality:'good',color,desc:`${kp.label}→${ln}→${kp.label}`,totalDist,steps,edges,coveredIds,stationCount:loop.length-1};
+}
+function buildRadiation(knownPts,targets,adj,color){
+  const edges=[],steps=[],coveredIds=new Set();let totalDist=0;
+  const groups=new Map(knownPts.map(kp=>[kp.id,[]]));
+  for(const np of targets){const vk=knownPts.filter(kp=>(adj.get(np.id)||new Set()).has(kp.id));if(!vk.length)continue;const n=vk.reduce((a,b)=>wdist(np,a)<wdist(np,b)?a:b);groups.get(n.id).push(np);coveredIds.add(np.id);}
+  let n=1;
+  for(const[kpId,tgts]of groups){
+    if(!tgts.length)continue;const kp=byId(kpId);
+    const bsCands=knownPts.filter(k=>k.id!==kpId&&(adj.get(kpId)||new Set()).has(k.id));const bsPt=bsCands[0]||null;
+    steps.push({t:'setup',txt:`【${kp.label}】に器械据付`});
+    if(bsPt){steps.push({t:'bs',txt:`後視: ${bsPt.label}`});edges.push({a:kpId,b:bsPt.id,kind:'bs',color:'#74b9e8'});}
+    else steps.push({t:'warn',txt:`後視点なし ⚠`});
+    tgts.sort((a,b)=>Math.atan2(a.wy-kp.wy,a.wx-kp.wx)-Math.atan2(b.wy-kp.wy,b.wx-kp.wx));
+    for(const t of tgts){const d=wdist(kp,t);totalDist+=d;steps.push({t:'obs',txt:`${n++}. 観測: ${t.label} (概距 ${d.toFixed(1)}m)`});edges.push({a:kpId,b:t.id,kind:'main',color});}
+  }
+  const sl=knownPts.filter(k=>groups.get(k.id)?.length>0).map(k=>k.label).join('・');
+  return{type:'放射トラバース',quality:'good',color,desc:`${sl} から放射観測`,totalDist,steps,edges,coveredIds,stationCount:knownPts.filter(k=>groups.get(k.id)?.length>0).length};
+}
+function buildOpen(knownPts,remaining,adj,color){
+  const edges=[],steps=[],coveredIds=new Set();let totalDist=0;
+  const startKp=knownPts[0];const chain=[startKp.id];const vis=new Set([startKp.id]);let cur=startKp.id;
+  const remIds=new Set(remaining.map(p=>p.id));
+  while(true){const nbs=[...(adj.get(cur)||[])].filter(id=>!vis.has(id)&&remIds.has(id));if(!nbs.length)break;const next=nbs.reduce((a,b)=>wdist(byId(a),byId(cur))<wdist(byId(b),byId(cur))?a:b);chain.push(next);vis.add(next);cur=next;coveredIds.add(next);}
+  steps.push({t:'warn',txt:'⚠ 開放トラバース — 精度確認不可'});steps.push({t:'setup',txt:`【${startKp.label}】に器械据付`});
+  let n=1;
+  for(let i=0;i<chain.length-1;i++){const pa=byId(chain[i]),pb=byId(chain[i+1]);if(!pa||!pb)continue;const d=wdist(pa,pb);totalDist+=d;steps.push({t:'obs',txt:`${n++}. 前視: ${pb.label} (概距 ${d.toFixed(1)}m)`});edges.push({a:chain[i],b:chain[i+1],kind:'main',color});if(i<chain.length-2){steps.push({t:'move',txt:`↓ 【${pb.label}】へ移動`});steps.push({t:'bs',txt:`後視: ${pa.label}`})}}
+  return{type:'開放トラバース',quality:'poor',color,desc:`${startKp.label} からの開放鎖`,totalDist,steps,edges,coveredIds,stationCount:chain.length};
+}
+
+function renderPlanCard(result,color){
+  const Q={excellent:'◎',good:'○',fair:'△',poor:'✕'};
+  const QC={excellent:'quality-excellent',good:'quality-good',fair:'quality-fair',poor:'quality-poor'};
+  let html='';
+  for(const sp of result.subplans){
+    html+=`<div class="plan-card" style="border-color:${sp.color};">
+      <div class="plan-title" style="color:${sp.color};">${sp.type} <span class="${QC[sp.quality]}" style="font-size:10px;font-weight:normal;">${Q[sp.quality]}</span></div>
+      <div class="plan-desc">${sp.desc}</div>
+      <div class="plan-stats">路線長: ${sp.totalDist.toFixed(1)} m  器械: ${sp.stationCount}点</div>`;
+    for(const step of sp.steps){
+      const cls={setup:'s-setup',bs:'s-bs',obs:'s-obs',side:'s-side',move:'s-move',close:'s-close',warn:'s-warn'}[step.t]||'s-obs';
+      html+=`<div class="step-row ${cls}">${step.t==='move'?'':''}`+step.txt+`</div>`;
+    }
+    html+='</div>';
+  }
+  if(result.uncovered&&result.uncovered.length)html+=`<div class="err-box">⚠ 未カバー: ${result.uncovered.map(p=>p.label).join(', ')}</div>`;
+  return html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MANUAL ROUTES
+// ═══════════════════════════════════════════════════════════════
+const ROUTE_COLORS=['#e91e63','#00bcd4','#ff9800','#8bc34a','#673ab7','#f44336','#cddc39','#ff5722'];
+
+function finalizeRoute(){
+  const draft=S.routeDraft;if(!draft||draft.pts.length<2){S.routeDraft=null;return;}
+  const startPt=byId(draft.pts[0]),endPt=byId(draft.pts[draft.pts.length-1]);
+  let type='開放';
+  if(startPt?.type==='known'&&endPt?.type==='known')type=startPt.id===endPt.id?'閉合':'結合';
+  const color=ROUTE_COLORS[S.manualRoutes.length%ROUTE_COLORS.length];
+  S.manualRoutes.push({id:S.routeUid++,pts:[...draft.pts],color,type});
+  S.routeDraft=null;updateRouteList();updateDrawerInfo();
+  showToast(`路線 ${S.manualRoutes.length} [${type}] を確定`);
+  render();
+}
+
+function deleteRoute(id){S.manualRoutes=S.manualRoutes.filter(r=>r.id!==id);updateRouteList();updateDrawerInfo();render();}
+
+function updateRouteList(){
+  const el=document.getElementById('route-list');
+  if(!S.manualRoutes.length){el.innerHTML='<div class="m-placeholder">「路線」ツールを選び<br>既知点タップで路線を開始</div>';return;}
+  let html='';
+  for(let i=0;i<S.manualRoutes.length;i++){
+    const r=S.manualRoutes[i];
+    const tc=r.type==='結合'?'#2ecc71':r.type==='閉合'?'#3498db':'#e74c3c';
+    html+=`<div class="route-card" style="border-color:${r.color};">
+      <div class="route-header">
+        <div class="route-dot" style="background:${r.color};"></div>
+        <span style="color:${r.color};font-weight:bold;font-size:12px;">路線 ${i+1}</span>
+        <span style="color:${tc};font-size:10px;margin-left:3px;">[${r.type}]</span>
+        <button class="route-del" onclick="deleteRoute(${r.id})">削除</button>
+      </div>
+      <div style="font-size:10px;color:#5a6580;">${r.pts.map(id=>byId(id)?.label||'?').join(' → ')}</div>
+    </div>`;
+  }
+  el.innerHTML=html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  PLAN CHECKER
+// ═══════════════════════════════════════════════════════════════
+function runCheck(){
+  switchTab('check');openDrawer();
+  if(!S.manualRoutes.length){
+    document.getElementById('check-scroll').innerHTML='<div class="m-placeholder">手動路線がありません<br>「路線」ツールで路線を作成してください</div>';return;
+  }
+  let html='';
+  for(let ri=0;ri<S.manualRoutes.length;ri++)html+=checkRoute(S.manualRoutes[ri],ri+1);
+  html+=checkCoverage();
+  document.getElementById('check-scroll').innerHTML=html;
+}
+
+function checkRoute(route,num){
+  const pts=route.pts,errors=[],warnings=[],infos=[];
+  const startPt=byId(pts[0]),endPt=byId(pts[pts.length-1]);
+  if(!startPt||startPt.type!=='known')errors.push('始点が既知点ではありません');
+  if(route.type==='開放')warnings.push('開放トラバース: 精度確認不可');
+  const blockedSegs=[];
+  for(let i=0;i<pts.length-1;i++){if(!canSee(pts[i],pts[i+1])){const pa=byId(pts[i]),pb=byId(pts[i+1]);blockedSegs.push(`${pa?.label||'?'}→${pb?.label||'?'}`);}}
+  if(blockedSegs.length>0)errors.push(`視通障害ライン: ${blockedSegs.join(', ')}`);
+  if(startPt?.type==='known'){
+    const bsCands=S.points.filter(p=>p.type==='known'&&p.id!==startPt.id&&canSee(startPt.id,p.id));
+    if(!bsCands.length)errors.push('後視できる既知点がありません');
+    else infos.push(`後視可能: ${bsCands.map(p=>p.label).join(', ')}`);
+  }
+  const legLengths=[];
+  for(let i=0;i<pts.length-1;i++){const pa=byId(pts[i]),pb=byId(pts[i+1]);if(pa&&pb)legLengths.push(wdist(pa,pb));}
+  if(legLengths.length>=2){
+    const minL=Math.min(...legLengths),maxL=Math.max(...legLengths),ratio=maxL/(minL||0.001);
+    if(ratio>3)warnings.push(`辺長比 ${ratio.toFixed(1)} > 3`);else infos.push(`辺長比: ${ratio.toFixed(1)} ✓`);
+  }
+  const badAngles=[];
+  for(let i=1;i<pts.length-1;i++){
+    const pa=byId(pts[i-1]),pb=byId(pts[i]),pc=byId(pts[i+1]);if(!pa||!pb||!pc)continue;
+    const ang=angleDeg(pa,pb,pc);if(ang<30||ang>150)badAngles.push(`${pb.label}:${ang.toFixed(0)}°`);
+  }
+  if(badAngles.length>0)warnings.push(`急折点: ${badAngles.join(', ')}`);
+  if((route.type==='結合'||route.type==='閉合')&&legLengths.length>0){
+    const totalL=legLengths.reduce((a,b)=>a+b,0),n=legLengths.length;
+    const est=(10/206265)*totalL*Math.sqrt(n);
+    const grade=totalL/est>=10000?'1級':totalL/est>=5000?'2級':totalL/est>=2000?'3級':'等外';
+    infos.push(`推定閉合差: ±${est.toFixed(3)} m (${grade}相当)`);
+  }
+  const tc=route.type==='結合'?'#2ecc71':route.type==='閉合'?'#3498db':'#e74c3c';
+  const ok=errors.length===0;
+  let html=`<div class="plan-card" style="border-color:${route.color};">
+    <div class="plan-title" style="color:${route.color};display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+      路線 ${num} <span style="color:${tc};font-size:10px;font-weight:normal;">[${route.type}]</span>
+      <span style="margin-left:auto;font-size:10px;color:${ok?(warnings.length?'#f39c12':'#2ecc71'):'#e74c3c'};font-weight:normal;">${ok?(warnings.length?'△要確認':'✓ OK'):'✗ エラー'}</span>
+    </div>
+    <div class="plan-desc">${pts.map(id=>byId(id)?.label||'?').join(' → ')}</div>`;
+  for(const e of errors)  html+=`<div class="step-row s-warn">✗ ${e}</div>`;
+  for(const w of warnings)html+=`<div class="step-row s-caution">△ ${w}</div>`;
+  for(const inf of infos) html+=`<div class="step-row s-info">ℹ ${inf}</div>`;
+  return html+'</div>';
+}
+
+function angleDeg(pa,pb,pc){
+  const v1x=pa.wx-pb.wx,v1y=pa.wy-pb.wy,v2x=pc.wx-pb.wx,v2y=pc.wy-pb.wy;
+  const dot=v1x*v2x+v1y*v2y,mag=Math.hypot(v1x,v1y)*Math.hypot(v2x,v2y);
+  if(mag===0)return 180;
+  return Math.acos(Math.max(-1,Math.min(1,dot/mag)))*180/Math.PI;
+}
+
+function checkCoverage(){
+  const newPts=S.points.filter(p=>p.type==='new');if(!newPts.length)return'';
+  const scopePts=S.areas.length>0?newPts.filter(p=>S.areas.some(a=>pointInPolygon(p.wx,p.wy,a.pts))):newPts;
+  const coveredIds=new Set();for(const r of S.manualRoutes)for(const id of r.pts)coveredIds.add(id);
+  const covered=scopePts.filter(p=>coveredIds.has(p.id)),uncovered=scopePts.filter(p=>!coveredIds.has(p.id));
+  let html=`<div class="plan-card" style="border-color:${uncovered.length?'#e74c3c':'#2ecc71'};">
+    <div class="plan-title" style="color:${uncovered.length?'#e74c3c':'#2ecc71'};">カバレッジ</div>
+    <div class="plan-stats">新点 ${scopePts.length} 点中 ${covered.length} 点カバー</div>`;
+  if(covered.length)html+=`<div class="step-row s-close">✓ ${covered.map(p=>p.label).join(', ')}</div>`;
+  if(uncovered.length)html+=`<div class="step-row s-warn">✗ ${uncovered.map(p=>p.label).join(', ')}</div>`;
+  return html+'</div>';
+}
+
+function pointInPolygon(wx,wy,poly){
+  let inside=false;
+  for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+    const xi=poly[i].wx,yi=poly[i].wy,xj=poly[j].wx,yj=poly[j].wy;
+    if(((yi>wy)!==(yj>wy))&&(wx<(xj-xi)*(wy-yi)/(yj-yi)+xi))inside=!inside;
+  }
+  return inside;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SAVE / LOAD / EXPORT
+// ═══════════════════════════════════════════════════════════════
+function dlBlob(content,filename,mime){
+  const blob=new Blob([content],{type:mime});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=filename;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+}
+function saveProject(){
+  const data={version:2,created:new Date().toISOString().slice(0,10),points:S.points.map(p=>({...p})),obstructs:S.obstructs.map(o=>({...o})),manualRoutes:S.manualRoutes.map(r=>({...r})),areas:S.areas.map(a=>({...a,pts:a.pts.map(p=>({...p}))}))};
+  dlBlob(JSON.stringify(data,null,2),'traverse-plan.json','application/json');
+  showToast('保存しました');
+}
+function loadProject(){
+  const inp=document.createElement('input');inp.type='file';inp.accept='.json';
+  inp.onchange=e=>{
+    const r=new FileReader();
+    r.onload=ev=>{
+      try{
+        const d=JSON.parse(ev.target.result);clearAll(true);
+        S.points=(d.points||[]).map(p=>({...p}));S.obstructs=(d.obstructs||[]).map(o=>({...o}));
+        S.uid=(Math.max(0,...S.points.map(p=>p.id))||0)+1;
+        S.manualRoutes=(d.manualRoutes||[]).map(r=>({...r}));S.routeUid=(Math.max(0,...S.manualRoutes.map(r=>r.id))||0)+1;
+        S.areas=(d.areas||[]).map(a=>({...a,pts:(a.pts||[]).map(p=>({...p}))}));S.areaUid=(Math.max(0,...S.areas.map(a=>a.id))||0)+1;
+        S.planEdges=[];S.planData=null;updateRouteList();updateDrawerInfo();fitView();render();
+        document.getElementById('plan-scroll').innerHTML='<div class="m-placeholder">読み込みました<br>「▶自動」を押してください</div>';
+        showToast('読み込み完了');
+      }catch(ex){showToast('読み込み失敗: '+ex.message,3000);}
+    };r.readAsText(e.target.files[0]);
+  };inp.click();
+}
+function exportPNG(){
+  const off=document.createElement('canvas');off.width=canvas.width;off.height=canvas.height;
+  const oc=off.getContext('2d');oc.fillStyle='#0c0d18';oc.fillRect(0,0,off.width,off.height);
+  oc.drawImage(canvas,0,0);
+  oc.fillStyle='rgba(150,160,180,0.4)';oc.font='10px monospace';oc.textAlign='right';
+  oc.fillText('トラバース測量計画 '+new Date().toLocaleDateString('ja-JP'),off.width-8,off.height-8);
+  const a=document.createElement('a');a.href=off.toDataURL('image/png');a.download='traverse-plan.png';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  showToast('画像を保存しました');
+}
+function exportTXT(){
+  const lines=['トラバース測量計画書','='.repeat(48),'作成日: '+new Date().toLocaleDateString('ja-JP'),''];
+  lines.push('[既知点]');S.points.filter(p=>p.type==='known').forEach(p=>lines.push(`  ${p.label.padEnd(8)} X=${p.survX.toFixed(3).padStart(10)}m  Y=${p.survY.toFixed(3).padStart(10)}m`));
+  lines.push('');lines.push('[新点]');S.points.filter(p=>p.type==='new').forEach(p=>lines.push(`  ${p.label}`));
+  if(S.obstructs.length){lines.push('');lines.push('[視通障害]');S.obstructs.forEach(o=>{const a=byId(o.a),b=byId(o.b);if(a&&b)lines.push(`  ${a.label} ←×→ ${b.label}`);});}
+  if(S.manualRoutes.length){lines.push('');lines.push('[手動路線]');S.manualRoutes.forEach((r,i)=>lines.push(`  路線${i+1}[${r.type}]: ${r.pts.map(id=>byId(id)?.label||'?').join('→')}`));}
+  if(S.planData?.length){
+    lines.push('');lines.push('[測量計画]');
+    for(const pd of S.planData)for(const sp of pd.subplans){
+      lines.push('','-'.repeat(48),`■ ${sp.type}`);lines.push(`  路線: ${sp.desc}`);lines.push(`  路線長: ${sp.totalDist.toFixed(1)}m  器械: ${sp.stationCount}点`);lines.push('  手順:');
+      sp.steps.forEach(s=>lines.push(`    ${s.txt}`));
+    }
+  }
+  lines.push('','='.repeat(48));
+  dlBlob(lines.join('\r\n'),'traverse-plan.txt','text/plain;charset=utf-8');
+  showToast('手順書を保存しました');
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  CONFIRM BANNER
+// ═══════════════════════════════════════════════════════════════
+function showConfirmBanner(msg,onOk){
+  document.getElementById('confirm-msg').textContent=msg;
+  document.getElementById('confirm-ok').onclick=onOk;
+  document.getElementById('confirm-banner').style.display='block';
+}
+function hideBanner(){document.getElementById('confirm-banner').style.display='none';}
+
+// ═══════════════════════════════════════════════════════════════
+//  SAMPLE DATA
+// ═══════════════════════════════════════════════════════════════
+function loadSample(){
+  clearAll(true);
+  const kps=[{survX:0,survY:0,label:'BM-1'},{survX:0,survY:60,label:'BM-2'},{survX:60,survY:30,label:'BM-3'}];
+  for(const k of kps)S.points.push({id:S.uid++,type:'known',label:k.label,wx:k.survY,wy:k.survX,survX:k.survX,survY:k.survY});
+  const nps=[{survX:25,survY:18,label:'P-1'},{survX:30,survY:38,label:'P-2'},{survX:48,survY:18,label:'P-3'},{survX:18,survY:75,label:'P-4'},{survX:60,survY:60,label:'P-5'}];
+  for(const n of nps)S.points.push({id:S.uid++,type:'new',label:n.label,wx:n.survY,wy:n.survX,survX:null,survY:null});
+  const bm1=S.points.find(p=>p.label==='BM-1'),bm2=S.points.find(p=>p.label==='BM-2');
+  const p5=S.points.find(p=>p.label==='P-5'),p3=S.points.find(p=>p.label==='P-3');
+  if(bm1&&p5)S.obstructs.push({a:bm1.id,b:p5.id});if(bm2&&p3)S.obstructs.push({a:bm2.id,b:p3.id});
+  updateDrawerInfo();
+  requestAnimationFrame(()=>{fitView();render();});
+  document.getElementById('plan-scroll').innerHTML='<div class="m-placeholder">サンプル読み込み完了<br>「▶自動」を押してください</div>';
+  showToast('サンプルデータを読み込みました');
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  PWA
+// ═══════════════════════════════════════════════════════════════
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════════
+setTool('select');
+requestAnimationFrame(resize);
+</script>
+</body>
+</html>
