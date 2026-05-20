@@ -423,6 +423,49 @@ body {
   white-space: nowrap;
 }
 #toast.show { opacity: 1; }
+
+/* ── MAP TAB ── */
+.map-section { margin-bottom: 18px; }
+.map-section-title { font-size: 10px; color: #4a6090; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+.map-layer-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.map-layer-btn {
+  background: #1e2338; border: 1px solid #2e3555; color: #6878a0;
+  padding: 9px 6px; border-radius: 6px; font-size: 12px; font-family: inherit;
+  cursor: pointer; text-align: center; transition: background 0.1s;
+}
+.map-layer-btn.active { background: #162038; border-color: #4a90d9; color: #74b9e8; }
+.map-layer-btn:active { opacity: 0.7; }
+.map-opacity-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.map-opacity-row span { font-size: 11px; color: #6878a0; min-width: 30px; }
+#opacity-slider {
+  flex: 1; -webkit-appearance: none; appearance: none;
+  height: 4px; background: #2e3555; border-radius: 2px; outline: none;
+}
+#opacity-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 18px; height: 18px;
+  border-radius: 50%; background: #4a90d9; cursor: pointer;
+}
+.map-action-btn {
+  display: block; width: 100%; background: #1e2338; border: 1px solid #2e3555;
+  color: #c0c8d8; padding: 10px 12px; border-radius: 6px; font-size: 13px;
+  font-family: inherit; cursor: pointer; text-align: left; margin-bottom: 6px;
+}
+.map-action-btn:active { opacity: 0.7; }
+.map-action-btn.gps { border-color: #27ae60; color: #2ecc71; background: #0e2418; }
+.map-action-btn.red { border-color: #8a2020; color: #e74c3c; background: #2a0c14; }
+#geo-origin-status {
+  font-size: 11px; color: #5dade2; margin-bottom: 8px;
+  padding: 6px 8px; background: #0a1020; border-radius: 4px;
+  font-family: monospace;
+}
+.map-note { font-size: 10px; color: #2e3a50; line-height: 1.8; text-align: center; margin-top: 12px; }
+
+/* ── GEO MODAL ── */
+#geo-modal-bg {
+  position: fixed; inset: 0; background: rgba(0,0,0,.75);
+  display: none; align-items: flex-end; justify-content: center; z-index: 250;
+}
+#geo-modal-bg.show { display: flex; }
 </style>
 </head>
 <body>
@@ -458,6 +501,7 @@ body {
     <button class="m-act-btn check"  onclick="runCheck()">✔チェック</button>
     <button class="m-act-btn"        onclick="fitView()">⊡全体</button>
     <button class="m-act-btn"        onclick="openDrawer()">≡計画</button>
+    <button class="m-act-btn teal"    onclick="openDrawer();switchTab('map')">🗺地図</button>
     <button class="m-act-btn"        onclick="openMenu()">⋯</button>
   </div>
 </div>
@@ -477,6 +521,7 @@ body {
     <button class="m-tab active" id="tab-btn-plan"  onclick="switchTab('plan')">自動計画</button>
     <button class="m-tab"        id="tab-btn-route" onclick="switchTab('route')">手動路線</button>
     <button class="m-tab"        id="tab-btn-check" onclick="switchTab('check')">チェック</button>
+    <button class="m-tab"        id="tab-btn-map"   onclick="switchTab('map')">地図</button>
   </div>
   <!-- TAB: 自動計画 -->
   <div class="m-tab-panel tab-active" id="tab-plan">
@@ -499,6 +544,39 @@ body {
     <div class="m-tab-hdr"><span>計画チェック</span></div>
     <div id="check-scroll" class="m-scroll">
       <div class="m-placeholder">「✔チェック」を押してください</div>
+    </div>
+  </div>
+  <!-- TAB: 地図 -->
+  <div class="m-tab-panel" id="tab-map">
+    <div class="m-scroll">
+      <div class="map-section">
+        <div class="map-section-title">背景レイヤー</div>
+        <div class="map-layer-btns">
+          <button class="map-layer-btn active" id="ml-none"  onclick="setMapLayer('none')">なし</button>
+          <button class="map-layer-btn"        id="ml-std"   onclick="setMapLayer('std')">標準地図</button>
+          <button class="map-layer-btn"        id="ml-pale"  onclick="setMapLayer('pale')">淡色地図</button>
+          <button class="map-layer-btn"        id="ml-photo" onclick="setMapLayer('photo')">航空写真</button>
+        </div>
+      </div>
+      <div class="map-section">
+        <div class="map-section-title">地図の透明度</div>
+        <div class="map-opacity-row">
+          <input type="range" id="opacity-slider" min="10" max="100" value="70" oninput="setMapOpacity(this.value)">
+          <span><span id="opacity-val">70</span>%</span>
+        </div>
+      </div>
+      <div class="map-section">
+        <div class="map-section-title">座標原点の設定（測量X=0,Y=0 の場所）</div>
+        <div id="geo-origin-status">未設定</div>
+        <button class="map-action-btn gps" onclick="setOriginGPS()">📍 GPS で現在地を原点に設定</button>
+        <button class="map-action-btn"     onclick="openGeoModal()">✎ 緯度経度を手動入力</button>
+        <button class="map-action-btn red" onclick="clearOrigin()">✕ 原点をリセット</button>
+      </div>
+      <div class="map-note">
+        国土地理院タイル地図を使用<br>
+        インターネット接続が必要です<br>
+        地図の著作権: 国土地理院
+      </div>
     </div>
   </div>
 </div>
@@ -548,6 +626,26 @@ body {
   </div>
 </div>
 
+<!-- GEO MODAL -->
+<div id="geo-modal-bg">
+  <div class="modal">
+    <h3>座標原点を設定</h3>
+    <p style="font-size:11px;color:#5a6580;margin-bottom:14px;">測量座標 X=0, Y=0 に対応する<br>実際の緯度・経度を入力してください</p>
+    <div class="fg">
+      <label>緯度（北緯）</label>
+      <input id="geo-lat" type="number" step="0.000001" inputmode="decimal" placeholder="例: 35.681236">
+    </div>
+    <div class="fg">
+      <label>経度（東経）</label>
+      <input id="geo-lon" type="number" step="0.000001" inputmode="decimal" placeholder="例: 139.767125">
+    </div>
+    <div class="modal-btns">
+      <button class="btn-ng" onclick="closeGeoModal()">キャンセル</button>
+      <button class="btn-ok" onclick="confirmGeoModal()">設定</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div id="toast"></div>
 
@@ -565,7 +663,17 @@ const S = {
   planEdges: [], planData: null,
   manualRoutes: [], routeDraft: null, routeUid: 1,
   areas: [], areaDraft: null, areaUid: 1,
+  // Map overlay
+  mapLayer: 'none',    // 'none' | 'std' | 'pale' | 'photo'
+  mapOpacity: 0.7,
+  originLat: null,     // WGS84 lat of survey origin (X=0,Y=0)
+  originLon: null,
 };
+
+// ═══════════════════════════════════════════════════════════════
+//  MAP TILE CACHE
+// ═══════════════════════════════════════════════════════════════
+const tileCache = new Map();
 
 // ═══════════════════════════════════════════════════════════════
 //  CANVAS
@@ -602,6 +710,7 @@ function s2w(sx,sy) {
 // ═══════════════════════════════════════════════════════════════
 function render() {
   ctx.clearRect(0,0,canvas.width,canvas.height);
+  drawTiles();
   drawGrid();
   drawAreas();
   drawPlanEdges();
@@ -870,13 +979,14 @@ function setTool(t){
 }
 
 function switchTab(name){
-  ['plan','route','check'].forEach(t=>{
+  ['plan','route','check','map'].forEach(t=>{
     const panel=document.getElementById('tab-'+t);
     const btn  =document.getElementById('tab-btn-'+t);
     const active=(t===name);
-    panel.classList.toggle('tab-active',active);
+    if(panel)panel.classList.toggle('tab-active',active);
     if(btn)btn.classList.toggle('active',active);
   });
+  if(name==='map') updateGeoStatus();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1710,6 +1820,191 @@ function loadSample(){
   requestAnimationFrame(()=>{fitView();render();});
   document.getElementById('plan-scroll').innerHTML='<div class="m-placeholder">サンプル読み込み完了<br>「▶自動」を押してください</div>';
   showToast('サンプルデータを読み込みました');
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MAP TILE OVERLAY (国土地理院)
+// ═══════════════════════════════════════════════════════════════
+
+// Flat-Earth approx: survey coords (wx=East m, wy=North m) ↔ WGS84
+function worldToLatLon(wx, wy) {
+  if (S.originLat == null) return null;
+  const lat = S.originLat + wy / 111320;
+  const lon = S.originLon + wx / (111320 * Math.cos(S.originLat * Math.PI / 180));
+  return {lat, lon};
+}
+function latLonToWorld(lat, lon) {
+  if (S.originLat == null) return null;
+  const wy = (lat - S.originLat) * 111320;
+  const wx = (lon - S.originLon) * 111320 * Math.cos(S.originLat * Math.PI / 180);
+  return {wx, wy};
+}
+
+// Web Mercator tile coordinate helpers
+function latLonToTileF(lat, lon, z) {
+  // Returns fractional tile coords (not floored)
+  const n = Math.pow(2, z);
+  const x = (lon + 180) / 360 * n;
+  const latR = lat * Math.PI / 180;
+  const y = (1 - Math.log(Math.tan(latR) + 1 / Math.cos(latR)) / Math.PI) / 2 * n;
+  return {x, y};
+}
+function tileNWLatLon(tx, ty, z) {
+  const n = Math.pow(2, z);
+  const lon = tx / n * 360 - 180;
+  const latR = Math.atan(Math.sinh(Math.PI * (1 - 2 * ty / n)));
+  return {lat: latR * 180 / Math.PI, lon};
+}
+
+function gsiTileUrl(z, x, y) {
+  if (S.mapLayer === 'photo') return `https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/${z}/${x}/${y}.jpg`;
+  if (S.mapLayer === 'pale')  return `https://cyberjapandata.gsi.go.jp/xyz/pale/${z}/${x}/${y}.png`;
+  return `https://cyberjapandata.gsi.go.jp/xyz/std/${z}/${x}/${y}.png`;
+}
+
+function drawTiles() {
+  if (S.mapLayer === 'none' || S.originLat == null) return;
+
+  // Choose zoom from current scale (pixels/m)
+  const cosLat = Math.cos(S.originLat * Math.PI / 180);
+  const rawZ = Math.log2(S.scale * 40075017 * cosLat / 256);
+  const z = Math.max(10, Math.min(18, Math.round(rawZ)));
+
+  // Canvas corners → lat/lon
+  const corners = [
+    s2w(0, 0), s2w(canvas.width, 0),
+    s2w(0, canvas.height), s2w(canvas.width, canvas.height)
+  ].map(w => worldToLatLon(w.x, w.y)).filter(Boolean);
+  if (corners.length === 0) return;
+
+  const minLat = Math.min(...corners.map(c => c.lat));
+  const maxLat = Math.max(...corners.map(c => c.lat));
+  const minLon = Math.min(...corners.map(c => c.lon));
+  const maxLon = Math.max(...corners.map(c => c.lon));
+
+  // Guard against extreme views
+  if (maxLat - minLat > 30 || maxLon - minLon > 30) return;
+
+  const nTiles = Math.pow(2, z);
+  const tl = latLonToTileF(maxLat, minLon, z);
+  const br = latLonToTileF(minLat, maxLon, z);
+  const txMin = Math.max(0, Math.floor(tl.x));
+  const txMax = Math.min(nTiles - 1, Math.floor(br.x));
+  const tyMin = Math.max(0, Math.floor(tl.y));
+  const tyMax = Math.min(nTiles - 1, Math.floor(br.y));
+
+  // Limit tile count to avoid runaway loading
+  if ((txMax - txMin + 1) * (tyMax - tyMin + 1) > 64) return;
+
+  ctx.save();
+  ctx.globalAlpha = S.mapOpacity;
+
+  for (let tx = txMin; tx <= txMax; tx++) {
+    for (let ty = tyMin; ty <= tyMax; ty++) {
+      // Tile NW and SE corners → world → screen
+      const nw = tileNWLatLon(tx, ty, z);
+      const se = tileNWLatLon(tx + 1, ty + 1, z);
+      const wNW = latLonToWorld(nw.lat, nw.lon);
+      const wSE = latLonToWorld(se.lat, se.lon);
+      if (!wNW || !wSE) continue;
+      const sNW = w2s(wNW.wx, wNW.wy);
+      const sSE = w2s(wSE.wx, wSE.wy);
+      const tw = sSE.x - sNW.x;
+      const th = sSE.y - sNW.y;
+      if (tw < 1 || th < 1) continue;
+
+      const url = gsiTileUrl(z, tx, ty);
+      let img = tileCache.get(url);
+      if (!img) {
+        img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload  = () => { tileCache.set(url, img); render(); };
+        img.onerror = () => tileCache.set(url, 'error');
+        tileCache.set(url, img); // mark as loading
+        img.src = url;
+      } else if (img !== 'error' && img.complete && img.naturalWidth > 0) {
+        ctx.drawImage(img, sNW.x, sNW.y, tw, th);
+      }
+    }
+  }
+  ctx.restore();
+}
+
+// ── Map layer / opacity controls ──
+function setMapLayer(layer) {
+  S.mapLayer = layer;
+  ['none','std','pale','photo'].forEach(l => {
+    const el = document.getElementById('ml-' + l);
+    if (el) el.classList.toggle('active', l === layer);
+  });
+  render();
+}
+
+function setMapOpacity(val) {
+  S.mapOpacity = Number(val) / 100;
+  const el = document.getElementById('opacity-val');
+  if (el) el.textContent = val;
+  render();
+}
+
+// ── Geo-origin (lat/lon of survey origin) ──
+function updateGeoStatus() {
+  const el = document.getElementById('geo-origin-status');
+  if (!el) return;
+  if (S.originLat == null) {
+    el.textContent = '未設定';
+    el.style.color = '#5a6580';
+  } else {
+    el.textContent = `緯度 ${S.originLat.toFixed(6)}  経度 ${S.originLon.toFixed(6)}`;
+    el.style.color = '#5dade2';
+  }
+}
+
+function setOriginGPS() {
+  if (!navigator.geolocation) { showToast('この端末はGPS非対応です'); return; }
+  showToast('GPS取得中…', 4000);
+  navigator.geolocation.getCurrentPosition(pos => {
+    S.originLat = pos.coords.latitude;
+    S.originLon = pos.coords.longitude;
+    updateGeoStatus();
+    tileCache.clear();
+    render();
+    showToast(`原点を設定しました\n${S.originLat.toFixed(6)}, ${S.originLon.toFixed(6)}`);
+  }, err => {
+    showToast('GPS取得失敗: ' + err.message);
+  }, {enableHighAccuracy: true, timeout: 15000});
+}
+
+function openGeoModal() {
+  document.getElementById('geo-lat').value = S.originLat != null ? S.originLat : '';
+  document.getElementById('geo-lon').value = S.originLon != null ? S.originLon : '';
+  document.getElementById('geo-modal-bg').classList.add('show');
+}
+function closeGeoModal() {
+  document.getElementById('geo-modal-bg').classList.remove('show');
+}
+function confirmGeoModal() {
+  const lat = parseFloat(document.getElementById('geo-lat').value);
+  const lon = parseFloat(document.getElementById('geo-lon').value);
+  if (isNaN(lat) || isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+    showToast('有効な緯度経度を入力してください');
+    return;
+  }
+  S.originLat = lat;
+  S.originLon = lon;
+  closeGeoModal();
+  updateGeoStatus();
+  tileCache.clear();
+  render();
+  showToast('原点を設定しました');
+}
+function clearOrigin() {
+  S.originLat = null;
+  S.originLon = null;
+  updateGeoStatus();
+  tileCache.clear();
+  render();
+  showToast('原点をリセットしました');
 }
 
 // ═══════════════════════════════════════════════════════════════
