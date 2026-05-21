@@ -654,8 +654,10 @@ body {
   <!-- FIELD MODE rows (hidden in plan mode) -->
   <div id="tool-row-field">
     <button class="fld-tool-btn active" id="btn-obs"        onclick="setTool('obs')">観測記録</button>
+    <button class="fld-tool-btn"        id="btn-field-pt"   onclick="setTool('field-pt')" style="border-color:#f39c12;color:#f39c12;">◇観測点＋</button>
     <button class="fld-tool-btn"        id="btn-struct"     onclick="setTool('struct')">構造物</button>
     <button class="fld-tool-btn"        id="btn-struct-del" onclick="setTool('struct-del')">構造物削除</button>
+    <button class="fld-tool-btn"        id="btn-field-del"  onclick="setTool('field-del')">観測点削除</button>
     <button class="fld-tool-btn"        id="btn-fselect"    onclick="setTool('fselect')">選択</button>
   </div>
   <div id="action-row-field">
@@ -831,6 +833,20 @@ body {
   <div id="obs-modal">
     <div id="obs-modal-title">点名</div>
     <div id="obs-modal-sub">路線</div>
+    <!-- Editable name (field points only) -->
+    <div id="obs-label-wrap" style="display:none;margin-bottom:10px;">
+      <label style="font-size:11px;color:#f39c12;display:block;margin-bottom:4px;">◇ 点名（変更可）</label>
+      <input id="obs-label-input" type="text"
+        style="width:100%;background:#252a3e;border:1px solid #f39c12;color:#f1c40f;
+               padding:10px 12px;border-radius:8px;font-size:16px;font-family:inherit;">
+    </div>
+    <!-- Note for field points -->
+    <div id="obs-fieldnote-wrap" style="display:none;margin-bottom:10px;">
+      <label style="font-size:11px;color:#4a6090;display:block;margin-bottom:4px;">位置メモ（任意）</label>
+      <input id="obs-fieldnote-input" type="text" placeholder="例: 北西角付近"
+        style="width:100%;background:#252a3e;border:1px solid #2e3555;color:#dde3ec;
+               padding:10px 12px;border-radius:8px;font-size:15px;font-family:inherit;">
+    </div>
     <div class="obs-type-grid" id="obs-type-grid"></div>
     <div id="obs-other-wrap">
       <input id="obs-other-input" type="text" placeholder="種別を入力…" inputmode="text">
@@ -1196,24 +1212,43 @@ function drawObstructPreview(){
 function drawPoint(p){
   const s=w2s(p.wx,p.wy);
   ctx.save();
-  ctx.shadowColor=p.type==='known'?'#e74c3c':'#3498db';ctx.shadowBlur=12;
   if(p.type==='known'){
+    ctx.shadowColor='#e74c3c';ctx.shadowBlur=12;
     ctx.fillStyle='#e74c3c';ctx.strokeStyle='#ff7070';ctx.lineWidth=1;
     ctx.beginPath();
     ctx.moveTo(s.x,s.y-POINT_R-2);ctx.lineTo(s.x+POINT_R+2,s.y+POINT_R-2);ctx.lineTo(s.x-POINT_R-2,s.y+POINT_R-2);
     ctx.closePath();ctx.fill();ctx.stroke();
-  }else{
+  }else if(p.type==='new'){
+    ctx.shadowColor='#3498db';ctx.shadowBlur=12;
     ctx.fillStyle='#2980b9';ctx.strokeStyle='#5dade2';ctx.lineWidth=1.5;
     ctx.beginPath();ctx.arc(s.x,s.y,POINT_R,0,Math.PI*2);ctx.fill();ctx.stroke();
+  }else{ // type==='field' (野帳観測点)
+    ctx.shadowColor='#f39c12';ctx.shadowBlur=10;
+    ctx.fillStyle='#e67e22';ctx.strokeStyle='#f1c40f';ctx.lineWidth=1.5;
+    ctx.beginPath();
+    ctx.moveTo(s.x,s.y-POINT_R-1);
+    ctx.lineTo(s.x+POINT_R+1,s.y);
+    ctx.lineTo(s.x,s.y+POINT_R+1);
+    ctx.lineTo(s.x-POINT_R-1,s.y);
+    ctx.closePath();ctx.fill();ctx.stroke();
+    // small "F" badge inside
+    ctx.shadowBlur=0;ctx.fillStyle='#fff';ctx.font='bold 8px sans-serif';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('F',s.x,s.y+1);
   }
   ctx.shadowBlur=0;
   if(S.obstFirst===p.id){ctx.strokeStyle='#e84560';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(s.x,s.y,POINT_R+6,0,Math.PI*2);ctx.stroke();}
   if(S.routeDraft&&S.routeDraft.pts[0]===p.id){ctx.strokeStyle='#a070f0';ctx.lineWidth=2;ctx.beginPath();ctx.arc(s.x,s.y,POINT_R+6,0,Math.PI*2);ctx.stroke();}
-  ctx.fillStyle='#dde3ec';ctx.font='bold 12px sans-serif';ctx.textAlign='left';
+  ctx.fillStyle= p.type==='field' ? '#f1c40f' : '#dde3ec';
+  ctx.font='bold 12px sans-serif';ctx.textAlign='left';ctx.textBaseline='alphabetic';
   ctx.shadowColor='#000';ctx.shadowBlur=4;ctx.fillText(p.label,s.x+POINT_R+4,s.y+5);
   if(p.type==='known'&&S.scale>20){
     ctx.fillStyle='#445070';ctx.font='9px monospace';ctx.shadowBlur=0;
     ctx.fillText(`(${p.survX.toFixed(1)},${p.survY.toFixed(1)})`,s.x+POINT_R+4,s.y+16);
+  }
+  if(p.type==='field'&&p.note&&S.scale>15){
+    ctx.fillStyle='#a0884a';ctx.font='9px sans-serif';ctx.shadowBlur=0;
+    ctx.fillText(p.note,s.x+POINT_R+4,s.y+16);
   }
   ctx.restore();
 }
@@ -1224,8 +1259,8 @@ function drawPoint(p){
 const TOOL_LABELS={
   select:'選択',known:'既知点追加',new:'新点追加',
   obstruct:'視通障害',delete:'削除',route:'手動路線追加',area:'観測エリア',
-  obs:'観測記録',struct:'構造物描画',
-  'struct-del':'構造物削除',fselect:'選択（野帳）',
+  obs:'観測記録','field-pt':'野帳観測点追加',struct:'構造物描画',
+  'struct-del':'構造物削除','field-del':'野帳観測点削除',fselect:'選択（野帳）',
 };
 
 function setTool(t){
@@ -1404,15 +1439,17 @@ function executeTap(sx,sy){
   }else if(S.tool==='route'){
     const p=nearPoint(sx,sy,TOUCH_R);
     if(!S.routeDraft){
-      if(p&&p.type==='known'){ S.routeDraft={pts:[p.id]}; showToast(p.label+' から路線開始'); }
-      else showToast('既知点をタップして路線を開始');
+      // In field mode, field points can start routes too
+      if(p&&(p.type==='known'||p.type==='field')){ S.routeDraft={pts:[p.id]}; showToast(p.label+' から路線開始'); }
+      else if(p&&p.type==='known'){ S.routeDraft={pts:[p.id]}; showToast(p.label+' から路線開始'); }
+      else showToast('既知点または野帳観測点をタップして路線を開始');
     }else{
       if(p){
         const draft=S.routeDraft;
         const isStart=p.id===draft.pts[0];
         const already=draft.pts.includes(p.id);
         if(isStart&&draft.pts.length>=3){ draft.pts.push(p.id); finalizeRoute(); }
-        else if(!already&&p.type==='known'&&!isStart){ draft.pts.push(p.id); finalizeRoute(); }
+        else if(!already&&(p.type==='known'||p.type==='field')&&!isStart){ draft.pts.push(p.id); finalizeRoute(); }
         else if(!already&&p.type==='new'){ draft.pts.push(p.id); showToast(p.label+' → 次の点をタップ'); }
         else if(already&&!isStart) showToast('既に含まれています');
       }else showToast('点をタップして路線を延長');
@@ -1452,6 +1489,14 @@ function executeTap(sx,sy){
       if(st) openFaceModal(st.id);
       else showToast('点をタップして観測を記録');
     }
+  }else if(S.tool==='field-pt'){
+    addFieldPoint(w.x, w.y);
+  }else if(S.tool==='field-del'){
+    const p=nearPoint(sx,sy,TOUCH_R);
+    if(p&&p.type==='field'){
+      deletePoint(p.id);
+      showToast(p.label+' を削除');
+    } else showToast('野帳観測点（◇）をタップして削除');
   }else if(S.tool==='struct'){
     addStructPoint(sx,sy,w);
   }else if(S.tool==='struct-del'){
@@ -2157,6 +2202,17 @@ function toggleFieldMode(){
   render();
 }
 
+// ── Field observation point ──
+function addFieldPoint(wx, wy) {
+  const label = 'F-' + S.uid;
+  const pt = {id:S.uid++, type:'field', label, wx, wy, survX:null, survY:null, note:''};
+  S.points.push(pt);
+  updateDrawerInfo();
+  render();
+  // Immediately open the obs modal so user can name + record type
+  openObsModal(pt.id);
+}
+
 // ── Structure drawing ──
 function addStructPoint(sx, sy, w){
   if(!S.structDraft){
@@ -2293,11 +2349,23 @@ function openObsModal(ptId){
   S._obsDraft = {ptId, existingId: existing ? existing.id : null};
   _obsSelType = existing ? existing.type : null;
 
+  // Field point: show editable label + position note
+  const isField = pt.type === 'field';
+  const labelWrap = document.getElementById('obs-label-wrap');
+  const fieldNoteWrap = document.getElementById('obs-fieldnote-wrap');
+  if(labelWrap) labelWrap.style.display = isField ? 'block' : 'none';
+  if(fieldNoteWrap) fieldNoteWrap.style.display = isField ? 'block' : 'none';
+  if(isField){
+    document.getElementById('obs-label-input').value = pt.label;
+    document.getElementById('obs-fieldnote-input').value = pt.note || '';
+  }
+
   // Route info
   const routes = [...S.manualRoutes, ...(S.planData ? S.planData.routes||[] : [])];
   const onRoutes = routes.filter(r => r.pts && r.pts.includes(ptId)).map(r=>r.label||r.type||'').filter(Boolean);
   document.getElementById('obs-modal-title').textContent = pt.label;
-  document.getElementById('obs-modal-sub').textContent = onRoutes.length ? '路線: '+onRoutes.join(', ') : (pt.type==='known'?'既知点':'新点');
+  const typeLabel = pt.type==='known'?'既知点（基準点）': pt.type==='field'?'◇ 野帳観測点':'新点（計画）';
+  document.getElementById('obs-modal-sub').textContent = onRoutes.length ? '路線: '+onRoutes.join(', ') : typeLabel;
 
   // Build type grid
   const grid = document.getElementById('obs-type-grid');
@@ -2335,6 +2403,13 @@ function saveObs(){
   if(!_obsSelType){ showToast('種別を選択してください'); return; }
   if(!S._obsDraft) return;
   const {ptId, existingId} = S._obsDraft;
+  const pt = byId(ptId);
+  // Update field point label/note if editable fields were shown
+  if(pt && pt.type==='field'){
+    const newLabel = document.getElementById('obs-label-input').value.trim();
+    if(newLabel) pt.label = newLabel;
+    pt.note = document.getElementById('obs-fieldnote-input').value.trim();
+  }
   const otherText = _obsSelType==='その他' ? document.getElementById('obs-other-input').value.trim() : '';
   const note = document.getElementById('obs-note-input').value.trim();
   const label = _obsSelType==='その他' && otherText ? otherText : _obsSelType;
@@ -2346,7 +2421,6 @@ function saveObs(){
   }
   closeObsModal();
   render();
-  const pt = byId(ptId);
   showToast((pt?pt.label:'')+'：'+label+' を記録しました');
 }
 function deleteObs(){
@@ -2430,12 +2504,14 @@ function drawFacePreview(st){
 function renderNotebookTab(){
   const el = document.getElementById('nb-scroll'); if(!el) return;
   const allPts = S.points;
+  const planPts = allPts.filter(p=>p.type!=='field');
+  const fieldPts2 = allPts.filter(p=>p.type==='field');
   const obsCount = S.observations.length;
-  const total = allPts.length;
+  const total = planPts.length;
 
   let html = `<div class="nb-summary">
-    <div class="nb-stat">観測済 <span>${obsCount}</span></div>
-    <div class="nb-stat">未観測 <span>${total-obsCount}</span></div>
+    <div class="nb-stat">計画点 観測済 <span>${S.observations.filter(o=>{const p=byId(o.ptId);return p&&p.type!=='field';}).length}/${total}</span></div>
+    <div class="nb-stat">野帳点 <span style="color:#f39c12;">${fieldPts2.length}</span></div>
     <div class="nb-stat">構造物 <span>${S.structures.length}</span></div>
   </div>`;
 
@@ -2462,14 +2538,25 @@ function renderNotebookTab(){
     }
     html += `</div>`;
   }
-  // Unrouted points
-  const unrouted = allPts.filter(p=>!usedPtIds.has(p.id));
+  // Survey plan points not on any route (known + new only)
+  const unrouted = allPts.filter(p=>!usedPtIds.has(p.id) && p.type !== 'field');
   if(unrouted.length>0){
     html += `<div class="nb-route-group">
-      <div class="nb-route-title">その他の点 (${unrouted.length}点)</div>`;
+      <div class="nb-route-title">路線未割当の点 (${unrouted.length}点)</div>`;
     for(const pt of unrouted){
       const obs = S.observations.find(o=>o.ptId===pt.id);
       html += nbItemHtml(pt, obs);
+    }
+    html += `</div>`;
+  }
+  // Field observation points (◇) — always shown in a dedicated group
+  const fieldPts = allPts.filter(p=>p.type==='field');
+  if(fieldPts.length>0){
+    html += `<div class="nb-route-group">
+      <div class="nb-route-title" style="color:#f39c12;">◇ 野帳観測点 (${fieldPts.length}点) — タップで編集</div>`;
+    for(const pt of fieldPts){
+      const obs = S.observations.find(o=>o.ptId===pt.id);
+      html += nbItemHtml(pt, obs, '#f39c12');
     }
     html += `</div>`;
   }
@@ -2491,15 +2578,17 @@ function renderNotebookTab(){
   }
   el.innerHTML = html;
 }
-function nbItemHtml(pt, obs){
+function nbItemHtml(pt, obs, accentColor){
   const dotCls = obs ? 'obs' : 'none';
   const typeStr = obs ? obs.label||obs.type : '未観測';
   const noteStr = obs && obs.note ? `<div class="nb-item-note">${obs.note}</div>` : '';
+  const ptNote = pt.note ? `<div class="nb-item-note" style="color:#a0884a;">${pt.note}</div>` : '';
+  const dotStyle = accentColor ? `background:${accentColor};border-radius:2px;transform:rotate(45deg);` : '';
   return `<div class="nb-item" onclick="openObsModal(${pt.id})">
-    <div class="nb-dot ${dotCls}"></div>
-    <div class="nb-item-name">${pt.label}</div>
+    <div class="nb-dot ${dotCls}" style="${dotStyle}"></div>
+    <div class="nb-item-name" style="${accentColor?'color:'+accentColor:''}">${pt.label}</div>
     <div class="nb-item-type">${typeStr}</div>
-    ${noteStr}
+    ${noteStr}${ptNote}
   </div>`;
 }
 
@@ -2528,13 +2617,24 @@ function exportFieldBook(){
       }
     }
   }
-  const unrouted = S.points.filter(p=>!usedPtIds.has(p.id));
+  const unrouted = S.points.filter(p=>!usedPtIds.has(p.id) && p.type!=='field');
   if(unrouted.length>0){
-    lines.push('', '【その他】');
+    lines.push('', '【路線未割当】');
     for(const pt of unrouted){
       const obs = S.observations.find(o=>o.ptId===pt.id);
       if(obs) lines.push(`  ○ ${pt.label.padEnd(12)} ${obs.label||obs.type}${obs.note?' ／ '+obs.note:''}`);
       else    lines.push(`  △ ${pt.label.padEnd(12)} 未観測`);
+    }
+  }
+  // Field observation points
+  const fpts = S.points.filter(p=>p.type==='field');
+  if(fpts.length>0){
+    lines.push('','■ 野帳観測点 ◇ ('+fpts.length+'点)', '-'.repeat(32));
+    for(const pt of fpts){
+      const obs = S.observations.find(o=>o.ptId===pt.id);
+      const loc = pt.note ? ` [${pt.note}]` : '';
+      if(obs) lines.push(`  ○ ${pt.label.padEnd(12)} ${obs.label||obs.type}${obs.note?' ／ '+obs.note:''}${loc}`);
+      else    lines.push(`  △ ${pt.label.padEnd(12)} 未記録${loc}`);
     }
   }
   if(S.structures.length>0){
