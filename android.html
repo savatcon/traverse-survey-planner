@@ -47,6 +47,18 @@ body {
 #sb-coords { font-size: 11px; color: #4a6090; font-family: monospace; }
 #sb-tool   { font-size: 11px; color: #9090a8; margin-left: auto; }
 #sb-hint   { display: none; }
+#sb-map-btn {
+  flex-shrink: 0;
+  background: none;
+  border: 1px solid #2a3a50;
+  color: #1abc9c;
+  font-size: 16px;
+  line-height: 1;
+  padding: 3px 7px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-family: inherit;
+}
 
 /* ── BOTTOM TOOLBAR ── */
 #bottombar {
@@ -475,6 +487,7 @@ body {
 <!-- TOP STATUS -->
 <div id="topbar">
   <span id="sb-coords">X: ---  Y: ---</span>
+  <button id="sb-map-btn" onclick="openDrawer();switchTab('map')">🗺</button>
   <span id="sb-tool">選択</span>
 </div>
 
@@ -488,8 +501,6 @@ body {
     <button class="m-tool-btn"        id="btn-route"    onclick="setTool('route')">路線</button>
     <button class="m-tool-btn"        id="btn-area"     onclick="setTool('area')">エリア</button>
     <button class="m-tool-btn"        id="btn-delete"   onclick="setTool('delete')">削除</button>
-    <div style="width:1px;background:#2e3555;flex-shrink:0;margin:4px 2px;"></div>
-    <button class="m-tool-btn" style="border-color:#1abc9c;color:#1abc9c;" onclick="openDrawer();switchTab('map')">🗺地図</button>
   </div>
   <div id="action-row">
     <button class="m-act-btn green"  onclick="runPlan()">▶自動</button>
