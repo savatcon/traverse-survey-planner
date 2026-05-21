@@ -472,6 +472,133 @@ body {
 }
 .map-note { font-size: 10px; color: #2e3a50; line-height: 1.8; text-align: center; margin-top: 12px; }
 
+/* ── FIELD MODE ── */
+#field-badge {
+  display: none;
+  background: #1a3a18; border: 1px solid #27ae60;
+  color: #2ecc71; font-size: 10px; padding: 2px 8px;
+  border-radius: 10px; font-weight: bold; letter-spacing: 0.5px;
+}
+#struct-done-wrap {
+  display: none; margin-left: auto;
+}
+#struct-done-btn {
+  background: #162038; border: 1px solid #4a90d9; color: #74b9e8;
+  padding: 5px 14px; border-radius: 6px; font-size: 12px;
+  font-family: inherit; cursor: pointer;
+}
+/* Field toolbar rows (hidden in plan mode) */
+#tool-row-field, #action-row-field {
+  display: none; overflow-x: auto; scrollbar-width: none;
+  padding: 5px 6px 4px; gap: 5px; align-items: center;
+}
+#tool-row-field::-webkit-scrollbar, #action-row-field::-webkit-scrollbar { display: none; }
+.fld-tool-btn {
+  flex-shrink: 0; background: #1e2338; border: 1px solid #2e3555; color: #6878a0;
+  padding: 7px 12px; border-radius: 6px; font-size: 12px; font-family: inherit;
+  cursor: pointer; white-space: nowrap;
+}
+.fld-tool-btn:active { opacity: 0.7; }
+.fld-tool-btn.active { background: #27ae60; border-color: #27ae60; color: #fff; }
+
+/* Observation modal */
+#obs-modal-bg {
+  position: fixed; inset: 0; background: rgba(0,0,0,.78);
+  display: none; align-items: flex-end; justify-content: center; z-index: 220;
+}
+#obs-modal-bg.show { display: flex; }
+#obs-modal {
+  background: #1b1f2e; border-top: 1px solid #2a3050;
+  border-radius: 16px 16px 0 0; padding: 16px 16px 32px;
+  width: 100%; max-width: 520px;
+}
+#obs-modal-title {
+  font-size: 16px; font-weight: bold; color: #dde3ec; margin-bottom: 2px;
+}
+#obs-modal-sub {
+  font-size: 11px; color: #4a6090; margin-bottom: 14px;
+}
+.obs-type-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-bottom: 12px;
+}
+.obs-type-btn {
+  background: #1e2338; border: 1px solid #2e3555; color: #8898b8;
+  padding: 12px 8px; border-radius: 8px; font-size: 13px;
+  font-family: inherit; cursor: pointer; text-align: center;
+  transition: background 0.1s;
+}
+.obs-type-btn:active { opacity: 0.7; }
+.obs-type-btn.selected { background: #162038; border-color: #4a90d9; color: #74b9e8; }
+#obs-other-wrap { margin-bottom: 12px; display: none; }
+#obs-other-wrap input {
+  width: 100%; background: #252a3e; border: 1px solid #3a4060; color: #dde3ec;
+  padding: 10px 12px; border-radius: 8px; font-size: 15px; font-family: inherit;
+}
+#obs-note-wrap { margin-bottom: 14px; }
+#obs-note-wrap label { display: block; font-size: 11px; color: #4a6090; margin-bottom: 4px; }
+#obs-note-wrap input {
+  width: 100%; background: #252a3e; border: 1px solid #3a4060; color: #dde3ec;
+  padding: 10px 12px; border-radius: 8px; font-size: 15px; font-family: inherit;
+}
+.obs-modal-btns { display: flex; gap: 8px; }
+.obs-modal-btns button { flex: 1; padding: 12px; border-radius: 8px; font-size: 14px; font-family: inherit; cursor: pointer; border: none; }
+#obs-save-btn  { background: #27ae60; color: #fff; }
+#obs-del-btn   { background: #2a0c14; border: 1px solid #8a2020 !important; color: #e74c3c; flex: 0 0 auto; padding: 12px 16px; }
+#obs-cancel-btn { background: #252a3e; color: #9090a8; border: 1px solid #3a4060 !important; }
+
+/* Structure face dialog */
+#face-modal-bg {
+  position: fixed; inset: 0; background: rgba(0,0,0,.72);
+  display: none; align-items: flex-end; justify-content: center; z-index: 230;
+}
+#face-modal-bg.show { display: flex; }
+#face-modal {
+  background: #1b1f2e; border-top: 1px solid #2a3050;
+  border-radius: 16px 16px 0 0; padding: 16px 16px 32px;
+  width: 100%; max-width: 520px;
+}
+#face-modal h3 { color: #e67e22; margin-bottom: 8px; font-size: 15px; }
+#face-modal-info { font-size: 11px; color: #4a6090; margin-bottom: 14px; }
+.face-canvas-wrap { display: flex; justify-content: center; margin-bottom: 14px; }
+#face-preview { border-radius: 8px; background: #12121e; }
+.face-btn-row { display: flex; gap: 8px; margin-bottom: 10px; }
+.face-btn {
+  flex: 1; padding: 13px 8px; border-radius: 8px; font-size: 13px;
+  font-family: inherit; cursor: pointer; border: 1px solid #2e3555;
+  background: #1e2338; color: #8898b8; text-align: center;
+}
+.face-btn.selected { background: #162038; border-color: #e67e22; color: #e67e22; }
+.face-btn:active { opacity: 0.7; }
+#face-label-row { margin-bottom: 12px; }
+#face-label-row label { display: block; font-size: 11px; color: #4a6090; margin-bottom: 4px; }
+#face-label-input {
+  width: 100%; background: #252a3e; border: 1px solid #3a4060; color: #dde3ec;
+  padding: 10px 12px; border-radius: 8px; font-size: 15px; font-family: inherit;
+}
+.face-modal-btns { display: flex; gap: 8px; }
+#face-ok-btn  { flex: 1; background: #e67e22; color: #fff; padding: 12px; border: none; border-radius: 8px; font-size: 14px; font-family: inherit; cursor: pointer; }
+#face-del-btn { background: #2a0c14; border: 1px solid #8a2020; color: #e74c3c; padding: 12px 16px; border-radius: 8px; font-size: 14px; font-family: inherit; cursor: pointer; }
+#face-ng-btn  { background: #252a3e; border: 1px solid #3a4060; color: #9090a8; padding: 12px 14px; border-radius: 8px; font-size: 14px; font-family: inherit; cursor: pointer; }
+
+/* Notebook (野帳) tab */
+.nb-summary { display: flex; gap: 12px; background: #0e1020; border-radius: 6px; padding: 8px 12px; margin-bottom: 10px; }
+.nb-stat { font-size: 10px; color: #4a6090; }
+.nb-stat span { color: #5dade2; font-weight: bold; }
+.nb-route-group { margin-bottom: 12px; }
+.nb-route-title { font-size: 11px; color: #e67e22; margin-bottom: 6px; padding: 4px 0; border-bottom: 1px solid #2a3050; }
+.nb-item {
+  background: #1a1f30; border-radius: 5px; padding: 8px 10px;
+  margin-bottom: 5px; display: flex; align-items: center; gap: 8px;
+  cursor: pointer;
+}
+.nb-item:active { opacity: 0.7; }
+.nb-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.nb-dot.obs  { background: #27ae60; }
+.nb-dot.none { background: #3a4060; }
+.nb-item-name { font-size: 13px; color: #dde3ec; flex: 1; }
+.nb-item-type { font-size: 10px; color: #5dade2; }
+.nb-item-note { font-size: 10px; color: #4a6090; }
+
 /* ── GEO MODAL ── */
 #geo-modal-bg {
   position: fixed; inset: 0; background: rgba(0,0,0,.75);
@@ -487,12 +614,17 @@ body {
 <!-- TOP STATUS -->
 <div id="topbar">
   <span id="sb-coords">X: ---  Y: ---</span>
+  <span id="field-badge">野帳モード</span>
   <button id="sb-map-btn" onclick="openDrawer();switchTab('map')">🗺</button>
   <span id="sb-tool">選択</span>
+  <div id="struct-done-wrap">
+    <button id="struct-done-btn" onclick="finalizeStruct()">✔ 完了</button>
+  </div>
 </div>
 
 <!-- BOTTOM TOOLBAR -->
 <div id="bottombar">
+  <!-- PLAN MODE rows -->
   <div id="tool-row">
     <button class="m-tool-btn active" id="btn-select"   onclick="setTool('select')">選択</button>
     <button class="m-tool-btn"        id="btn-known"    onclick="setTool('known')">既知点＋</button>
@@ -501,6 +633,8 @@ body {
     <button class="m-tool-btn"        id="btn-route"    onclick="setTool('route')">路線</button>
     <button class="m-tool-btn"        id="btn-area"     onclick="setTool('area')">エリア</button>
     <button class="m-tool-btn"        id="btn-delete"   onclick="setTool('delete')">削除</button>
+    <div style="width:1px;background:#2e3555;flex-shrink:0;margin:4px 2px;"></div>
+    <button class="m-tool-btn" style="border-color:#1abc9c;color:#1abc9c;" onclick="openDrawer();switchTab('map')">🗺地図</button>
   </div>
   <div id="action-row">
     <button class="m-act-btn green"  onclick="runPlan()">▶自動</button>
@@ -515,6 +649,20 @@ body {
     <button class="m-act-btn"        onclick="fitView()">⊡全体</button>
     <button class="m-act-btn"        onclick="openDrawer()">≡計画</button>
     <button class="m-act-btn"        onclick="openMenu()">⋯</button>
+    <button class="m-act-btn" style="border-color:#f39c12;color:#f39c12;" onclick="toggleFieldMode()">📋 野帳</button>
+  </div>
+  <!-- FIELD MODE rows (hidden in plan mode) -->
+  <div id="tool-row-field">
+    <button class="fld-tool-btn active" id="btn-obs"        onclick="setTool('obs')">観測記録</button>
+    <button class="fld-tool-btn"        id="btn-struct"     onclick="setTool('struct')">構造物</button>
+    <button class="fld-tool-btn"        id="btn-struct-del" onclick="setTool('struct-del')">構造物削除</button>
+    <button class="fld-tool-btn"        id="btn-fselect"    onclick="setTool('fselect')">選択</button>
+  </div>
+  <div id="action-row-field">
+    <button class="m-act-btn"           onclick="fitView()">⊡全体</button>
+    <button class="m-act-btn"           onclick="openDrawer();switchTab('nb')">≡野帳</button>
+    <button class="m-act-btn check"     onclick="exportFieldBook()">📤出力</button>
+    <button class="m-act-btn" style="border-color:#e84560;color:#e84560;" onclick="toggleFieldMode()">← 計画へ</button>
   </div>
 </div>
 
@@ -534,6 +682,7 @@ body {
     <button class="m-tab"        id="tab-btn-route" onclick="switchTab('route')">手動路線</button>
     <button class="m-tab"        id="tab-btn-check" onclick="switchTab('check')">チェック</button>
     <button class="m-tab"        id="tab-btn-map"   onclick="switchTab('map')">地図</button>
+    <button class="m-tab"        id="tab-btn-nb"    onclick="switchTab('nb')">野帳</button>
   </div>
   <!-- TAB: 自動計画 -->
   <div class="m-tab-panel tab-active" id="tab-plan">
@@ -556,6 +705,16 @@ body {
     <div class="m-tab-hdr"><span>計画チェック</span></div>
     <div id="check-scroll" class="m-scroll">
       <div class="m-placeholder">「✔チェック」を押してください</div>
+    </div>
+  </div>
+  <!-- TAB: 野帳 -->
+  <div class="m-tab-panel" id="tab-nb">
+    <div class="m-tab-hdr">
+      <span>電子野帳</span>
+      <button onclick="exportFieldBook()">TXT出力</button>
+    </div>
+    <div id="nb-scroll" class="m-scroll">
+      <div class="m-placeholder">野帳モードで観測を記録してください</div>
     </div>
   </div>
   <!-- TAB: 地図 -->
@@ -638,6 +797,52 @@ body {
   </div>
 </div>
 
+<!-- OBSERVATION MODAL -->
+<div id="obs-modal-bg">
+  <div id="obs-modal">
+    <div id="obs-modal-title">点名</div>
+    <div id="obs-modal-sub">路線</div>
+    <div class="obs-type-grid" id="obs-type-grid"></div>
+    <div id="obs-other-wrap">
+      <input id="obs-other-input" type="text" placeholder="種別を入力…" inputmode="text">
+    </div>
+    <div id="obs-note-wrap">
+      <label>備考（任意）</label>
+      <input id="obs-note-input" type="text" placeholder="メモ…" inputmode="text">
+    </div>
+    <div class="obs-modal-btns">
+      <button id="obs-cancel-btn" onclick="closeObsModal()">キャンセル</button>
+      <button id="obs-save-btn"   onclick="saveObs()">記録する</button>
+      <button id="obs-del-btn"    onclick="deleteObs()" style="display:none">削除</button>
+    </div>
+  </div>
+</div>
+
+<!-- STRUCTURE FACE DIALOG -->
+<div id="face-modal-bg">
+  <div id="face-modal">
+    <h3>構造物の設定</h3>
+    <div id="face-modal-info">描画方向（始点→終点）を基準に観測面を選択</div>
+    <div class="face-canvas-wrap">
+      <canvas id="face-preview" width="260" height="80"></canvas>
+    </div>
+    <div id="face-label-row">
+      <label>名称・メモ（任意）</label>
+      <input id="face-label-input" type="text" placeholder="例: 北側ブロック塀">
+    </div>
+    <div class="face-btn-row">
+      <button class="face-btn" id="face-left-btn"  onclick="selectFace('left')">← 左側面</button>
+      <button class="face-btn" id="face-none-btn"  onclick="selectFace(null)">なし</button>
+      <button class="face-btn" id="face-right-btn" onclick="selectFace('right')">右側面 →</button>
+    </div>
+    <div class="face-modal-btns">
+      <button id="face-ng-btn"  onclick="closeFaceModal()">キャンセル</button>
+      <button id="face-ok-btn"  onclick="saveFace()">保存</button>
+      <button id="face-del-btn" onclick="deleteStruct()">削除</button>
+    </div>
+  </div>
+</div>
+
 <!-- GEO MODAL -->
 <div id="geo-modal-bg">
   <div class="modal">
@@ -675,6 +880,16 @@ const S = {
   planEdges: [], planData: null,
   manualRoutes: [], routeDraft: null, routeUid: 1,
   areas: [], areaDraft: null, areaUid: 1,
+  // Field book (電子野帳)
+  fieldMode: false,
+  observations: [],   // [{id, ptId, type, note, ts}]
+  obsUid: 1,
+  structures: [],     // [{id, pts:[{wx,wy},...], label, face:null|'left'|'right'}]
+  structDraft: null,  // {pts:[{wx,wy},...]}
+  structUid: 1,
+  selStructId: null,  // structure being edited in face dialog
+  _obsDraft: null,    // {ptId, existingId} for obs modal
+  _faceDraft: null,   // selected face value while dialog open
   // Map overlay
   mapLayer: 'none',    // 'none' | 'std' | 'pale' | 'photo'
   mapOpacity: 0.7,
@@ -729,8 +944,10 @@ function render() {
   drawManualRoutes();
   drawObstructions();
   drawObstructPreview();
+  drawStructures();
   S.points.forEach(drawPoint);
   drawRouteHover();
+  if(S.fieldMode) drawFieldOverlay();
 }
 
 function drawGrid() {
@@ -976,22 +1193,28 @@ function drawPoint(p){
 // ═══════════════════════════════════════════════════════════════
 const TOOL_LABELS={
   select:'選択',known:'既知点追加',new:'新点追加',
-  obstruct:'視通障害',delete:'削除',route:'手動路線追加',area:'観測エリア'
+  obstruct:'視通障害',delete:'削除',route:'手動路線追加',area:'観測エリア',
+  obs:'観測記録',struct:'構造物描画',
+  'struct-del':'構造物削除',fselect:'選択（野帳）',
 };
 
 function setTool(t){
   if(t!=='route')    S.routeDraft=null;
   if(t!=='area')     S.areaDraft=null;
   if(t!=='obstruct') S.obstFirst=null;
+  if(t!=='struct')   S.structDraft=null;
   S.tool=t;
-  document.querySelectorAll('.m-tool-btn').forEach(b=>b.classList.remove('active'));
+  // struct draft done button visibility
+  const sdw=document.getElementById('struct-done-wrap');
+  if(sdw) sdw.style.display='none';
+  document.querySelectorAll('.m-tool-btn,.fld-tool-btn').forEach(b=>b.classList.remove('active'));
   const b=document.getElementById('btn-'+t);if(b)b.classList.add('active');
   document.getElementById('sb-tool').textContent=TOOL_LABELS[t]||t;
   render();
 }
 
 function switchTab(name){
-  ['plan','route','check','map'].forEach(t=>{
+  ['plan','route','check','nb','map'].forEach(t=>{
     const panel=document.getElementById('tab-'+t);
     const btn  =document.getElementById('tab-btn-'+t);
     const active=(t===name);
@@ -999,6 +1222,7 @@ function switchTab(name){
     if(btn)btn.classList.toggle('active',active);
   });
   if(name==='map') updateGeoStatus();
+  if(name==='nb')  renderNotebookTab();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1110,7 +1334,7 @@ canvas.addEventListener('touchmove', e=>{
 
     const w=s2w(sx,sy);
     document.getElementById('sb-coords').textContent=`X:${w.y.toFixed(1)}  Y:${w.x.toFixed(1)}`;
-    if((S.tool==='route'&&S.routeDraft)||(S.tool==='area'&&S.areaDraft)||(S.tool==='obstruct'&&S.obstFirst))render();
+    if((S.tool==='route'&&S.routeDraft)||(S.tool==='area'&&S.areaDraft)||(S.tool==='obstruct'&&S.obstFirst)||(S.tool==='struct'&&S.structDraft))render();
   }
 },{passive:false});
 
@@ -1190,6 +1414,24 @@ function executeTap(sx,sy){
         if(a){ S.areas=S.areas.filter(x=>x.id!==a.id); updateDrawerInfo(); showToast('エリアを削除'); }
       }
     }
+  }else if(S.tool==='obs'){
+    const p=nearPoint(sx,sy,TOUCH_R);
+    if(p) openObsModal(p.id);
+    else {
+      const st=nearStruct(sx,sy,14);
+      if(st) openFaceModal(st.id);
+      else showToast('点をタップして観測を記録');
+    }
+  }else if(S.tool==='struct'){
+    addStructPoint(sx,sy,w);
+  }else if(S.tool==='struct-del'){
+    const st=nearStruct(sx,sy,18);
+    if(st){ S.structures=S.structures.filter(x=>x.id!==st.id); showToast('構造物を削除'); }
+    else showToast('構造物をタップして削除');
+  }else if(S.tool==='fselect'){
+    const st=nearStruct(sx,sy,14);
+    if(st) openFaceModal(st.id);
+    else{ const p=nearPoint(sx,sy,TOUCH_R); if(p) openObsModal(p.id); }
   }
   render();
 }
@@ -1231,6 +1473,16 @@ function nearArea(sx,sy,thr=12){
       const j=(i+1)%pts.length;
       const sa=w2s(pts[i].wx,pts[i].wy),sb=w2s(pts[j].wx,pts[j].wy);
       if(ptSegDist(sx,sy,sa.x,sa.y,sb.x,sb.y)<thr)return area;
+    }
+  }
+  return null;
+}
+function nearStruct(sx,sy,thr=14){
+  for(const st of S.structures){
+    const pts=st.pts;
+    for(let i=0;i<pts.length-1;i++){
+      const sa=w2s(pts[i].wx,pts[i].wy),sb=w2s(pts[i+1].wx,pts[i+1].wy);
+      if(ptSegDist(sx,sy,sa.x,sa.y,sb.x,sb.y)<thr)return st;
     }
   }
   return null;
@@ -1303,6 +1555,8 @@ function clearAll(force=false){
   S.points=[];S.obstructs=[];S.planEdges=[];S.uid=1;S.obstFirst=null;
   S.manualRoutes=[];S.routeDraft=null;S.routeUid=1;
   S.areas=[];S.areaDraft=null;S.areaUid=1;
+  S.observations=[];S.obsUid=1;
+  S.structures=[];S.structDraft=null;S.structUid=1;
   hideBanner();refreshList();updateRouteList();updateDrawerInfo();
   document.getElementById('plan-scroll').innerHTML='<div class="m-placeholder">「▶自動」ボタンを押してください</div>';
   document.getElementById('check-scroll').innerHTML='<div class="m-placeholder">「✔チェック」を押してください</div>';
@@ -1756,7 +2010,13 @@ function dlBlob(content,filename,mime){
   document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
 }
 function saveProject(){
-  const data={version:2,created:new Date().toISOString().slice(0,10),points:S.points.map(p=>({...p})),obstructs:S.obstructs.map(o=>({...o})),manualRoutes:S.manualRoutes.map(r=>({...r})),areas:S.areas.map(a=>({...a,pts:a.pts.map(p=>({...p}))}))};
+  const data={version:3,created:new Date().toISOString().slice(0,10),
+    points:S.points.map(p=>({...p})),obstructs:S.obstructs.map(o=>({...o})),
+    manualRoutes:S.manualRoutes.map(r=>({...r})),
+    areas:S.areas.map(a=>({...a,pts:a.pts.map(p=>({...p}))})),
+    observations:S.observations.map(o=>({...o})),
+    structures:S.structures.map(s=>({...s,pts:s.pts.map(p=>({...p}))})),
+  };
   dlBlob(JSON.stringify(data,null,2),'traverse-plan.json','application/json');
   showToast('保存しました');
 }
@@ -1771,6 +2031,8 @@ function loadProject(){
         S.uid=(Math.max(0,...S.points.map(p=>p.id))||0)+1;
         S.manualRoutes=(d.manualRoutes||[]).map(r=>({...r}));S.routeUid=(Math.max(0,...S.manualRoutes.map(r=>r.id))||0)+1;
         S.areas=(d.areas||[]).map(a=>({...a,pts:(a.pts||[]).map(p=>({...p}))}));S.areaUid=(Math.max(0,...S.areas.map(a=>a.id))||0)+1;
+        S.observations=(d.observations||[]).map(o=>({...o}));S.obsUid=(Math.max(0,...S.observations.map(o=>o.id))||0)+1;
+        S.structures=(d.structures||[]).map(s=>({...s,pts:(s.pts||[]).map(p=>({...p}))}));S.structUid=(Math.max(0,...S.structures.map(s=>s.id))||0)+1;
         S.planEdges=[];S.planData=null;updateRouteList();updateDrawerInfo();fitView();render();
         document.getElementById('plan-scroll').innerHTML='<div class="m-placeholder">読み込みました<br>「▶自動」を押してください</div>';
         showToast('読み込み完了');
@@ -1832,6 +2094,426 @@ function loadSample(){
   requestAnimationFrame(()=>{fitView();render();});
   document.getElementById('plan-scroll').innerHTML='<div class="m-placeholder">サンプル読み込み完了<br>「▶自動」を押してください</div>';
   showToast('サンプルデータを読み込みました');
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  FIELD MODE (電子野帳)
+// ═══════════════════════════════════════════════════════════════
+const OBS_TYPES = [
+  '金属鋲','白プラ杭','プラ杭','コン杭',
+  '金属標識','アルミP','電柱','マンホール',
+  '構造物角','その他',
+];
+
+function toggleFieldMode(){
+  S.fieldMode = !S.fieldMode;
+  S.structDraft = null; S.routeDraft = null; S.areaDraft = null; S.obstFirst = null;
+  const plan  = [document.getElementById('tool-row'), document.getElementById('action-row')];
+  const field = [document.getElementById('tool-row-field'), document.getElementById('action-row-field')];
+  plan.forEach(el=>{if(el)el.style.display = S.fieldMode ? 'none' : ''});
+  field.forEach(el=>{if(el)el.style.display = S.fieldMode ? 'flex' : 'none'});
+  const badge = document.getElementById('field-badge');
+  if(badge) badge.style.display = S.fieldMode ? 'inline-block' : 'none';
+  if(S.fieldMode){
+    setTool('obs');
+    showToast('野帳モードに切り替えました');
+  } else {
+    setTool('select');
+    showToast('計画モードに戻りました');
+  }
+  render();
+}
+
+// ── Structure drawing ──
+function addStructPoint(sx, sy, w){
+  if(!S.structDraft){
+    S.structDraft = {pts:[{wx:w.x,wy:w.y}]};
+    document.getElementById('struct-done-wrap').style.display = 'block';
+    showToast('構造物: タップで頂点追加、✔完了で確定');
+  } else {
+    const first = S.structDraft.pts[0], sf = w2s(first.wx, first.wy);
+    if(S.structDraft.pts.length >= 2 && Math.hypot(sx-sf.x, sy-sf.y) < 28){
+      finalizeStruct();
+    } else {
+      S.structDraft.pts.push({wx:w.x, wy:w.y});
+      showToast('頂点 '+S.structDraft.pts.length+'点 — 始点付近または✔完了で確定');
+    }
+  }
+}
+
+function finalizeStruct(){
+  if(!S.structDraft || S.structDraft.pts.length < 2){ S.structDraft=null; render(); return; }
+  const st = {id: S.structUid++, pts:[...S.structDraft.pts], label:'', face:null};
+  S.structures.push(st);
+  S.structDraft = null;
+  document.getElementById('struct-done-wrap').style.display = 'none';
+  render();
+  openFaceModal(st.id);
+}
+
+// ── Structure canvas drawing ──
+function drawStructures(){
+  // Draw completed structures
+  for(const st of S.structures){
+    if(st.pts.length < 2) continue;
+    ctx.save();
+    ctx.strokeStyle = '#e67e22';
+    ctx.lineWidth = 3;
+    ctx.globalAlpha = 0.85;
+    ctx.beginPath();
+    const s0 = w2s(st.pts[0].wx, st.pts[0].wy);
+    ctx.moveTo(s0.x, s0.y);
+    for(let i=1; i<st.pts.length; i++){
+      const s = w2s(st.pts[i].wx, st.pts[i].wy);
+      ctx.lineTo(s.x, s.y);
+    }
+    ctx.stroke();
+    // Face tick marks
+    if(st.face){
+      ctx.strokeStyle = '#f39c12';
+      ctx.lineWidth = 2;
+      ctx.globalAlpha = 0.9;
+      for(let i=0; i<st.pts.length-1; i++){
+        const sa = w2s(st.pts[i].wx, st.pts[i].wy);
+        const sb = w2s(st.pts[i+1].wx, st.pts[i+1].wy);
+        const dx = sb.x-sa.x, dy = sb.y-sa.y;
+        const len = Math.hypot(dx,dy);
+        if(len < 4) continue;
+        const ux = dx/len, uy = dy/len;
+        // perpendicular (right = uy, -ux; left = -uy, ux)
+        const px = st.face==='right' ?  uy*8 : -uy*8;
+        const py = st.face==='right' ? -ux*8 :  ux*8;
+        const steps = Math.max(1, Math.floor(len/24));
+        for(let k=0; k<=steps; k++){
+          const t = steps===0 ? 0.5 : k/steps;
+          const mx = sa.x + dx*t, my = sa.y + dy*t;
+          ctx.beginPath();
+          ctx.moveTo(mx, my);
+          ctx.lineTo(mx+px, my+py);
+          ctx.stroke();
+        }
+      }
+    }
+    // Label
+    if(st.label){
+      const mid = st.pts[Math.floor(st.pts.length/2)];
+      const sm = w2s(mid.wx, mid.wy);
+      ctx.fillStyle='#e67e22'; ctx.font='bold 11px sans-serif';
+      ctx.textAlign='center'; ctx.shadowColor='#000'; ctx.shadowBlur=3;
+      ctx.fillText(st.label, sm.x, sm.y-10);
+    }
+    ctx.restore();
+  }
+  // Draw draft
+  if(S.structDraft && S.structDraft.pts.length > 0){
+    ctx.save();
+    ctx.strokeStyle='#f1c40f'; ctx.lineWidth=2;
+    ctx.setLineDash([6,4]); ctx.globalAlpha=0.8;
+    ctx.beginPath();
+    const s0 = w2s(S.structDraft.pts[0].wx, S.structDraft.pts[0].wy);
+    ctx.arc(s0.x, s0.y, 8, 0, Math.PI*2);
+    ctx.stroke();
+    if(S.structDraft.pts.length > 1){
+      ctx.beginPath();
+      ctx.moveTo(s0.x, s0.y);
+      for(let i=1; i<S.structDraft.pts.length; i++){
+        const s = w2s(S.structDraft.pts[i].wx, S.structDraft.pts[i].wy);
+        ctx.lineTo(s.x, s.y);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
+// ── Field overlay on survey points ──
+function drawFieldOverlay(){
+  for(const pt of S.points){
+    const obs = S.observations.find(o => o.ptId === pt.id);
+    const sp = w2s(pt.wx, pt.wy);
+    ctx.save();
+    if(obs){
+      // Green check badge
+      ctx.fillStyle='#27ae60'; ctx.globalAlpha=0.95;
+      ctx.beginPath(); ctx.arc(sp.x+POINT_R+2, sp.y-POINT_R-2, 8, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle='#fff'; ctx.font='bold 10px sans-serif';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('✓', sp.x+POINT_R+2, sp.y-POINT_R-2);
+    } else {
+      // Orange pending badge
+      ctx.fillStyle='#e67e22'; ctx.globalAlpha=0.7;
+      ctx.beginPath(); ctx.arc(sp.x+POINT_R+2, sp.y-POINT_R-2, 7, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle='#fff'; ctx.font='bold 9px sans-serif';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('?', sp.x+POINT_R+2, sp.y-POINT_R-2);
+    }
+    ctx.restore();
+  }
+}
+
+// ── Observation modal ──
+let _obsSelType = null;
+
+function openObsModal(ptId){
+  const pt = byId(ptId); if(!pt) return;
+  const existing = S.observations.find(o => o.ptId === ptId);
+  S._obsDraft = {ptId, existingId: existing ? existing.id : null};
+  _obsSelType = existing ? existing.type : null;
+
+  // Route info
+  const routes = [...S.manualRoutes, ...(S.planData ? S.planData.routes||[] : [])];
+  const onRoutes = routes.filter(r => r.pts && r.pts.includes(ptId)).map(r=>r.label||r.type||'').filter(Boolean);
+  document.getElementById('obs-modal-title').textContent = pt.label;
+  document.getElementById('obs-modal-sub').textContent = onRoutes.length ? '路線: '+onRoutes.join(', ') : (pt.type==='known'?'既知点':'新点');
+
+  // Build type grid
+  const grid = document.getElementById('obs-type-grid');
+  grid.innerHTML = OBS_TYPES.map(t =>
+    `<button class="obs-type-btn${_obsSelType===t?' selected':''}" onclick="selectObsType('${t}')">${t}</button>`
+  ).join('');
+
+  // Other input
+  const otherWrap = document.getElementById('obs-other-wrap');
+  otherWrap.style.display = _obsSelType==='その他' ? 'block' : 'none';
+  if(existing && existing.type==='その他')
+    document.getElementById('obs-other-input').value = existing.otherText||'';
+  else document.getElementById('obs-other-input').value = '';
+
+  // Note
+  document.getElementById('obs-note-input').value = existing ? existing.note||'' : '';
+
+  // Del button
+  document.getElementById('obs-del-btn').style.display = existing ? 'block' : 'none';
+
+  document.getElementById('obs-modal-bg').classList.add('show');
+}
+function closeObsModal(){
+  document.getElementById('obs-modal-bg').classList.remove('show');
+  S._obsDraft = null; _obsSelType = null;
+}
+function selectObsType(t){
+  _obsSelType = t;
+  document.querySelectorAll('.obs-type-btn').forEach(b=>{
+    b.classList.toggle('selected', b.textContent===t);
+  });
+  document.getElementById('obs-other-wrap').style.display = t==='その他' ? 'block' : 'none';
+}
+function saveObs(){
+  if(!_obsSelType){ showToast('種別を選択してください'); return; }
+  if(!S._obsDraft) return;
+  const {ptId, existingId} = S._obsDraft;
+  const otherText = _obsSelType==='その他' ? document.getElementById('obs-other-input').value.trim() : '';
+  const note = document.getElementById('obs-note-input').value.trim();
+  const label = _obsSelType==='その他' && otherText ? otherText : _obsSelType;
+  if(existingId != null){
+    const obs = S.observations.find(o=>o.id===existingId);
+    if(obs){ obs.type=_obsSelType; obs.otherText=otherText; obs.label=label; obs.note=note; obs.ts=Date.now(); }
+  } else {
+    S.observations.push({id:S.obsUid++, ptId, type:_obsSelType, otherText, label, note, ts:Date.now()});
+  }
+  closeObsModal();
+  render();
+  const pt = byId(ptId);
+  showToast((pt?pt.label:'')+'：'+label+' を記録しました');
+}
+function deleteObs(){
+  if(!S._obsDraft||S._obsDraft.existingId==null) return;
+  S.observations = S.observations.filter(o=>o.id!==S._obsDraft.existingId);
+  closeObsModal();
+  render();
+  showToast('観測記録を削除しました');
+}
+
+// ── Face modal ──
+function openFaceModal(structId){
+  const st = S.structures.find(s=>s.id===structId); if(!st) return;
+  S.selStructId = structId;
+  S._faceDraft = st.face;
+  document.getElementById('face-label-input').value = st.label||'';
+  updateFaceBtns();
+  drawFacePreview(st);
+  document.getElementById('face-modal-bg').classList.add('show');
+}
+function closeFaceModal(){
+  document.getElementById('face-modal-bg').classList.remove('show');
+  S.selStructId = null; S._faceDraft = null;
+}
+function selectFace(val){
+  S._faceDraft = val;
+  updateFaceBtns();
+  const st = S.structures.find(s=>s.id===S.selStructId);
+  if(st) drawFacePreview(st);
+}
+function updateFaceBtns(){
+  ['left','right'].forEach(f=>{
+    const b=document.getElementById('face-'+f+'-btn');
+    if(b) b.classList.toggle('selected', S._faceDraft===f);
+  });
+  const nb=document.getElementById('face-none-btn');
+  if(nb) nb.classList.toggle('selected', S._faceDraft==null);
+}
+function saveFace(){
+  const st = S.structures.find(s=>s.id===S.selStructId); if(!st) return;
+  st.face = S._faceDraft;
+  st.label = document.getElementById('face-label-input').value.trim();
+  closeFaceModal();
+  render();
+  showToast('構造物を保存しました');
+}
+function deleteStruct(){
+  S.structures = S.structures.filter(s=>s.id!==S.selStructId);
+  closeFaceModal();
+  render();
+  showToast('構造物を削除しました');
+}
+function drawFacePreview(st){
+  const c = document.getElementById('face-preview');
+  const cx = c.getContext('2d');
+  cx.clearRect(0,0,c.width,c.height);
+  cx.fillStyle='#12121e'; cx.fillRect(0,0,c.width,c.height);
+  // Draw a simple line in the center
+  const y = c.height/2;
+  cx.strokeStyle='#e67e22'; cx.lineWidth=3;
+  cx.beginPath(); cx.moveTo(20,y); cx.lineTo(c.width-20,y); cx.stroke();
+  // Arrow showing direction
+  cx.fillStyle='#e67e22';
+  cx.beginPath(); cx.moveTo(c.width-20,y); cx.lineTo(c.width-32,y-6); cx.lineTo(c.width-32,y+6); cx.closePath(); cx.fill();
+  // Labels
+  cx.fillStyle='#5dade2'; cx.font='11px sans-serif'; cx.textAlign='center';
+  cx.fillText('描画方向 →', c.width/2, y-16);
+  // Ticks on selected face
+  if(S._faceDraft){
+    const dir = S._faceDraft==='right' ? 1 : -1;
+    cx.strokeStyle='#f39c12'; cx.lineWidth=2;
+    for(let x=40; x<c.width-20; x+=24){
+      cx.beginPath(); cx.moveTo(x,y); cx.lineTo(x,y+dir*14); cx.stroke();
+    }
+    cx.fillStyle='#f39c12'; cx.font='bold 11px sans-serif'; cx.textAlign='center';
+    cx.fillText(S._faceDraft==='right' ? '↓ 右側面（観測面）' : '↑ 左側面（観測面）', c.width/2, y + dir*22 + (dir>0?10:-2));
+  }
+}
+
+// ── Notebook tab ──
+function renderNotebookTab(){
+  const el = document.getElementById('nb-scroll'); if(!el) return;
+  const allPts = S.points;
+  const obsCount = S.observations.length;
+  const total = allPts.length;
+
+  let html = `<div class="nb-summary">
+    <div class="nb-stat">観測済 <span>${obsCount}</span></div>
+    <div class="nb-stat">未観測 <span>${total-obsCount}</span></div>
+    <div class="nb-stat">構造物 <span>${S.structures.length}</span></div>
+  </div>`;
+
+  // Group by route (manual routes first, then auto-plan routes)
+  const allRoutes = [...S.manualRoutes];
+  // add auto-plan routes if available
+  if(S.planData && S.planData.routes){
+    for(const r of S.planData.routes){
+      if(!allRoutes.find(x=>x.id===r.id)) allRoutes.push(r);
+    }
+  }
+
+  const usedPtIds = new Set();
+  for(const route of allRoutes){
+    if(!route.pts||route.pts.length===0) continue;
+    const pts = route.pts.map(id=>byId(id)).filter(Boolean);
+    if(pts.length===0) continue;
+    html += `<div class="nb-route-group">
+      <div class="nb-route-title">📍 ${route.label||route.type||'路線'} (${pts.length}点)</div>`;
+    for(const pt of pts){
+      usedPtIds.add(pt.id);
+      const obs = S.observations.find(o=>o.ptId===pt.id);
+      html += nbItemHtml(pt, obs);
+    }
+    html += `</div>`;
+  }
+  // Unrouted points
+  const unrouted = allPts.filter(p=>!usedPtIds.has(p.id));
+  if(unrouted.length>0){
+    html += `<div class="nb-route-group">
+      <div class="nb-route-title">その他の点 (${unrouted.length}点)</div>`;
+    for(const pt of unrouted){
+      const obs = S.observations.find(o=>o.ptId===pt.id);
+      html += nbItemHtml(pt, obs);
+    }
+    html += `</div>`;
+  }
+  if(S.structures.length>0){
+    html += `<div class="nb-route-group">
+      <div class="nb-route-title">構造物 (${S.structures.length}件)</div>`;
+    for(const st of S.structures){
+      const faceStr = st.face==='left' ? '左側面' : st.face==='right' ? '右側面' : '面未設定';
+      html += `<div class="nb-item" onclick="openFaceModal(${st.id})">
+        <div class="nb-dot obs" style="background:#e67e22;border-radius:2px;"></div>
+        <div class="nb-item-name">${st.label||'（名称なし）'}</div>
+        <div class="nb-item-type">${faceStr}</div>
+      </div>`;
+    }
+    html += `</div>`;
+  }
+  if(!html.includes('nb-route-group')&&obsCount===0){
+    html += `<div class="m-placeholder">野帳モードで観測を記録してください</div>`;
+  }
+  el.innerHTML = html;
+}
+function nbItemHtml(pt, obs){
+  const dotCls = obs ? 'obs' : 'none';
+  const typeStr = obs ? obs.label||obs.type : '未観測';
+  const noteStr = obs && obs.note ? `<div class="nb-item-note">${obs.note}</div>` : '';
+  return `<div class="nb-item" onclick="openObsModal(${pt.id})">
+    <div class="nb-dot ${dotCls}"></div>
+    <div class="nb-item-name">${pt.label}</div>
+    <div class="nb-item-type">${typeStr}</div>
+    ${noteStr}
+  </div>`;
+}
+
+// ── Export field book ──
+function exportFieldBook(){
+  if(S.observations.length===0 && S.structures.length===0){
+    showToast('記録がありません'); return;
+  }
+  const lines = ['='.repeat(48),'電子野帳 出力','='.repeat(48),''];
+  const dt = new Date().toLocaleString('ja-JP');
+  lines.push('出力日時: '+dt, '');
+  lines.push('■ 観測記録 ('+S.observations.length+'件)', '-'.repeat(32));
+  const allRoutes = [...S.manualRoutes];
+  const usedPtIds = new Set();
+  for(const route of allRoutes){
+    if(!route.pts||route.pts.length===0) continue;
+    lines.push('', '【'+( route.label||route.type||'路線')+' '+route.pts.length+'点】');
+    for(const ptId of route.pts){
+      usedPtIds.add(ptId);
+      const pt = byId(ptId); if(!pt) continue;
+      const obs = S.observations.find(o=>o.ptId===ptId);
+      if(obs){
+        lines.push(`  ○ ${pt.label.padEnd(12)} ${obs.label||obs.type}${obs.note?' ／ '+obs.note:''}`);
+      } else {
+        lines.push(`  △ ${pt.label.padEnd(12)} 未観測`);
+      }
+    }
+  }
+  const unrouted = S.points.filter(p=>!usedPtIds.has(p.id));
+  if(unrouted.length>0){
+    lines.push('', '【その他】');
+    for(const pt of unrouted){
+      const obs = S.observations.find(o=>o.ptId===pt.id);
+      if(obs) lines.push(`  ○ ${pt.label.padEnd(12)} ${obs.label||obs.type}${obs.note?' ／ '+obs.note:''}`);
+      else    lines.push(`  △ ${pt.label.padEnd(12)} 未観測`);
+    }
+  }
+  if(S.structures.length>0){
+    lines.push('', '■ 構造物 ('+S.structures.length+'件)', '-'.repeat(32));
+    for(const st of S.structures){
+      const faceStr = st.face==='left'?'左側面':st.face==='right'?'右側面':'面未設定';
+      lines.push(`  ${st.label||'（名称なし）'} — ${faceStr} — ${st.pts.length}点`);
+    }
+  }
+  lines.push('','='.repeat(48));
+  dlBlob(lines.join('\r\n'),'fieldbook.txt','text/plain;charset=utf-8');
+  showToast('野帳を出力しました');
 }
 
 // ═══════════════════════════════════════════════════════════════
