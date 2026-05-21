@@ -737,7 +737,36 @@ body {
         </div>
       </div>
       <div class="map-section">
-        <div class="map-section-title">座標原点の設定（測量X=0,Y=0 の場所）</div>
+        <div class="map-section-title">📐 平面直角座標系（推奨）</div>
+        <div style="font-size:10px;color:#4a6090;margin-bottom:8px;">系番号を選ぶと既知点の座標から自動で地図と連動します</div>
+        <select id="jp-zone-sel" onchange="setJPZone(this.value)"
+          style="width:100%;background:#1e2338;border:1px solid #2e3555;color:#c0c8d8;
+                 padding:10px;border-radius:8px;font-size:14px;font-family:inherit;margin-bottom:6px;">
+          <option value="">── 系番号を選択 ──</option>
+          <option value="1">第I系  (長崎・鹿児島西部)</option>
+          <option value="2">第II系 (福岡・熊本など九州)</option>
+          <option value="3">第III系 (山口・島根・広島)</option>
+          <option value="4">第IV系 (香川・愛媛・高知など)</option>
+          <option value="5">第V系  (兵庫・鳥取・岡山)</option>
+          <option value="6">第VI系 (京都・大阪・福井など)</option>
+          <option value="7">第VII系 (石川・富山・岐阜南)</option>
+          <option value="8">第VIII系 (新潟・長野・山梨・静岡)</option>
+          <option value="9">第IX系 (東京・埼玉・神奈川など)</option>
+          <option value="10">第X系  (青森・秋田・岩手など)</option>
+          <option value="11">第XI系 (北海道西部・小樽など)</option>
+          <option value="12">第XII系 (北海道中央・札幌など)</option>
+          <option value="13">第XIII系 (北海道東部・釧路など)</option>
+          <option value="14">第XIV系 (東京南方諸島)</option>
+          <option value="15">第XV系 (沖縄本島周辺)</option>
+          <option value="16">第XVI系 (宮古・石垣)</option>
+          <option value="17">第XVII系 (沖ノ鳥島)</option>
+          <option value="18">第XVIII系 (小笠原諸島)</option>
+          <option value="19">第XIX系 (南鳥島)</option>
+        </select>
+        <div id="zone-status" style="font-size:10px;color:#4a6090;min-height:16px;"></div>
+      </div>
+      <div class="map-section">
+        <div class="map-section-title">📍 手動設定（系番号が不明な場合）</div>
         <div id="geo-origin-status">未設定</div>
         <button class="map-action-btn gps" onclick="setOriginGPS()">📍 GPS で現在地を原点に設定</button>
         <button class="map-action-btn"     onclick="openGeoModal()">✎ 緯度経度を手動入力</button>
@@ -893,7 +922,8 @@ const S = {
   // Map overlay
   mapLayer: 'none',    // 'none' | 'std' | 'pale' | 'photo'
   mapOpacity: 0.7,
-  originLat: null,     // WGS84 lat of survey origin (X=0,Y=0)
+  jpZone: null,        // Japan plane rectangular zone 1-19 (auto-converts from survX/Y)
+  originLat: null,     // WGS84 lat of survey origin (fallback, X=0,Y=0)
   originLon: null,
 };
 
@@ -2010,7 +2040,8 @@ function dlBlob(content,filename,mime){
   document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
 }
 function saveProject(){
-  const data={version:3,created:new Date().toISOString().slice(0,10),
+  const data={version:4,created:new Date().toISOString().slice(0,10),
+    jpZone:S.jpZone, originLat:S.originLat, originLon:S.originLon,
     points:S.points.map(p=>({...p})),obstructs:S.obstructs.map(o=>({...o})),
     manualRoutes:S.manualRoutes.map(r=>({...r})),
     areas:S.areas.map(a=>({...a,pts:a.pts.map(p=>({...p}))})),
@@ -2033,6 +2064,8 @@ function loadProject(){
         S.areas=(d.areas||[]).map(a=>({...a,pts:(a.pts||[]).map(p=>({...p}))}));S.areaUid=(Math.max(0,...S.areas.map(a=>a.id))||0)+1;
         S.observations=(d.observations||[]).map(o=>({...o}));S.obsUid=(Math.max(0,...S.observations.map(o=>o.id))||0)+1;
         S.structures=(d.structures||[]).map(s=>({...s,pts:(s.pts||[]).map(p=>({...p}))}));S.structUid=(Math.max(0,...S.structures.map(s=>s.id))||0)+1;
+        if(d.jpZone){S.jpZone=d.jpZone;const sel=document.getElementById('jp-zone-sel');if(sel)sel.value=d.jpZone;}
+        if(d.originLat!=null){S.originLat=d.originLat;S.originLon=d.originLon;}
         S.planEdges=[];S.planData=null;updateRouteList();updateDrawerInfo();fitView();render();
         document.getElementById('plan-scroll').innerHTML='<div class="m-placeholder">読み込みました<br>「▶自動」を押してください</div>';
         showToast('読み込み完了');
@@ -2520,18 +2553,100 @@ function exportFieldBook(){
 //  MAP TILE OVERLAY (国土地理院)
 // ═══════════════════════════════════════════════════════════════
 
-// Flat-Earth approx: survey coords (wx=East m, wy=North m) ↔ WGS84
+// ── Japan Plane Rectangular Zone Origins (平面直角座標系原点) ──
+const JP_ZONES = {
+  1:{lat0:33,lon0:129.5},     2:{lat0:33,lon0:131},
+  3:{lat0:36,lon0:132+10/60}, 4:{lat0:33,lon0:133.5},
+  5:{lat0:36,lon0:134+20/60}, 6:{lat0:36,lon0:136},
+  7:{lat0:36,lon0:137+10/60}, 8:{lat0:36,lon0:138.5},
+  9:{lat0:36,lon0:139+50/60}, 10:{lat0:40,lon0:140+50/60},
+  11:{lat0:44,lon0:140.25},   12:{lat0:44,lon0:142.25},
+  13:{lat0:44,lon0:144.25},   14:{lat0:26,lon0:142},
+  15:{lat0:26,lon0:127.5},    16:{lat0:26,lon0:124},
+  17:{lat0:26,lon0:131},      18:{lat0:20,lon0:136},
+  19:{lat0:26,lon0:154},
+};
+
+// ── Gauss-Krüger inverse: Japan plane rectangular (survX,survY) → WGS84 ──
+// GRS80 ellipsoid, scale m0=0.9999, Karney(2011) 4th-order series
+function jprectToLatLon(survX, survY, zone) {
+  const zo=JP_ZONES[zone]; if(!zo) return null;
+  const a=6378137.0, f=1/298.257222101, m0=0.9999;
+  const n=f/(2-f), n2=n*n, n3=n2*n, n4=n3*n;
+  const Abar=a/(1+n)*(1+n2/4+n4/64);
+  const phi0=zo.lat0*Math.PI/180, lam0=zo.lon0*Math.PI/180;
+  function S(phi){
+    return m0*Abar*(phi+(-3/2*n+9/16*n3)*Math.sin(2*phi)
+      +(15/16*n2-15/32*n4)*Math.sin(4*phi)+(-35/48*n3)*Math.sin(6*phi)
+      +(315/512*n4)*Math.sin(8*phi));
+  }
+  const S0=S(phi0);
+  const xb=(survX+S0)/(m0*Abar), eb=survY/(m0*Abar);
+  const b1=1/2*n-2/3*n2+37/96*n3-1/360*n4;
+  const b2=1/48*n2+1/15*n3-437/1440*n4;
+  const b3=17/480*n3-37/840*n4;
+  const b4=4397/161280*n4;
+  const xi =xb-b1*Math.sin(2*xb)*Math.cosh(2*eb)-b2*Math.sin(4*xb)*Math.cosh(4*eb)
+               -b3*Math.sin(6*xb)*Math.cosh(6*eb)-b4*Math.sin(8*xb)*Math.cosh(8*eb);
+  const eta=eb-b1*Math.cos(2*xb)*Math.sinh(2*eb)-b2*Math.cos(4*xb)*Math.sinh(4*eb)
+               -b3*Math.cos(6*xb)*Math.sinh(6*eb)-b4*Math.cos(8*xb)*Math.sinh(8*eb);
+  const chi=Math.asin(Math.sin(xi)/Math.cosh(eta));
+  const lam=lam0+Math.atan2(Math.sinh(eta),Math.cos(xi));
+  const d1=2*n-2/3*n2-2*n3+116/45*n4;
+  const d2=7/3*n2-8/5*n3-227/45*n4;
+  const d3=56/15*n3-136/35*n4;
+  const d4=4279/630*n4;
+  const phi=chi+d1*Math.sin(2*chi)+d2*Math.sin(4*chi)+d3*Math.sin(6*chi)+d4*Math.sin(8*chi);
+  return {lat:phi*180/Math.PI, lon:lam*180/Math.PI};
+}
+
+// Forward: WGS84 → Japan plane rectangular (for latLonToWorld)
+function latLonToJPrect(lat, lon, zone) {
+  const zo=JP_ZONES[zone]; if(!zo) return null;
+  const a=6378137.0, f=1/298.257222101, m0=0.9999;
+  const n=f/(2-f), n2=n*n, n3=n2*n, n4=n3*n;
+  const Abar=a/(1+n)*(1+n2/4+n4/64);
+  const phi=lat*Math.PI/180, lam=lon*Math.PI/180;
+  const phi0=zo.lat0*Math.PI/180, lam0=zo.lon0*Math.PI/180;
+  const e2=2*f-f*f, e=Math.sqrt(e2);
+  const es=e*Math.sin(phi);
+  const chi=2*Math.atan(Math.tan(Math.PI/4+phi/2)*Math.pow((1-es)/(1+es),e/2))-Math.PI/2;
+  const dlam=lam-lam0;
+  const xi=Math.atan2(Math.sin(chi),Math.cos(chi)*Math.cos(dlam));
+  const eta=Math.atanh(Math.cos(chi)*Math.sin(dlam));
+  const a1=1/2*n-2/3*n2+5/16*n3+41/180*n4;
+  const a2=13/48*n2-3/5*n3+557/1440*n4;
+  const a3=61/240*n3-103/140*n4;
+  const a4=49561/161280*n4;
+  const xp=xi +a1*Math.sin(2*xi)*Math.cosh(2*eta)+a2*Math.sin(4*xi)*Math.cosh(4*eta)
+               +a3*Math.sin(6*xi)*Math.cosh(6*eta)+a4*Math.sin(8*xi)*Math.cosh(8*eta);
+  const ep=eta+a1*Math.cos(2*xi)*Math.sinh(2*eta)+a2*Math.cos(4*xi)*Math.sinh(4*eta)
+               +a3*Math.cos(6*xi)*Math.sinh(6*eta)+a4*Math.cos(8*xi)*Math.sinh(8*eta);
+  function S(p){return m0*Abar*(p+(-3/2*n+9/16*n3)*Math.sin(2*p)
+    +(15/16*n2-15/32*n4)*Math.sin(4*p)+(-35/48*n3)*Math.sin(6*p)+(315/512*n4)*Math.sin(8*p));}
+  return {survX: m0*Abar*xp-S(phi0), survY: m0*Abar*ep};
+}
+
+// ── canvas world ↔ WGS84 ──
+// canvas wx=East(m)=survY, wy=North(m)=survX
 function worldToLatLon(wx, wy) {
+  if (S.jpZone) return jprectToLatLon(wy, wx, S.jpZone);
   if (S.originLat == null) return null;
-  const lat = S.originLat + wy / 111320;
-  const lon = S.originLon + wx / (111320 * Math.cos(S.originLat * Math.PI / 180));
-  return {lat, lon};
+  return {
+    lat: S.originLat + wy/111320,
+    lon: S.originLon + wx/(111320*Math.cos(S.originLat*Math.PI/180))
+  };
 }
 function latLonToWorld(lat, lon) {
+  if (S.jpZone) {
+    const r=latLonToJPrect(lat,lon,S.jpZone); if(!r) return null;
+    return {wx:r.survY, wy:r.survX};
+  }
   if (S.originLat == null) return null;
-  const wy = (lat - S.originLat) * 111320;
-  const wx = (lon - S.originLon) * 111320 * Math.cos(S.originLat * Math.PI / 180);
-  return {wx, wy};
+  return {
+    wx: (lon-S.originLon)*111320*Math.cos(S.originLat*Math.PI/180),
+    wy: (lat-S.originLat)*111320
+  };
 }
 
 // Web Mercator tile coordinate helpers
@@ -2557,10 +2672,14 @@ function gsiTileUrl(z, x, y) {
 }
 
 function drawTiles() {
-  if (S.mapLayer === 'none' || S.originLat == null) return;
+  const mapReady = S.jpZone || S.originLat != null;
+  if (S.mapLayer === 'none' || !mapReady) return;
+
+  // Reference lat for zoom level: use zone origin or manual origin
+  const refLat = S.jpZone ? JP_ZONES[S.jpZone].lat0 : S.originLat;
 
   // Choose zoom from current scale (pixels/m)
-  const cosLat = Math.cos(S.originLat * Math.PI / 180);
+  const cosLat = Math.cos(refLat * Math.PI / 180);
   const rawZ = Math.log2(S.scale * 40075017 * cosLat / 256);
   const z = Math.max(10, Math.min(18, Math.round(rawZ)));
 
@@ -2641,10 +2760,46 @@ function setMapOpacity(val) {
   render();
 }
 
-// ── Geo-origin (lat/lon of survey origin) ──
+// ── Zone-based geo setup ──
+function setJPZone(val) {
+  S.jpZone = val ? Number(val) : null;
+  tileCache.clear();
+  updateGeoStatus();
+  render();
+
+  const zs = document.getElementById('zone-status');
+  if (!zs) return;
+  if (!S.jpZone) { zs.textContent = ''; return; }
+
+  const zo = JP_ZONES[S.jpZone];
+  // Try to show lat/lon of the first known point as verification
+  const kp = S.points.find(p => p.type === 'known');
+  if (kp) {
+    const ll = jprectToLatLon(kp.wy, kp.wx, S.jpZone);
+    if (ll) {
+      zs.textContent = `✓ ${kp.label}: ${ll.lat.toFixed(5)}°N, ${ll.lon.toFixed(5)}°E`;
+      zs.style.color = '#2ecc71';
+    }
+  } else {
+    zs.textContent = `原点 ${zo.lat0}°N, ${zo.lon0}°E`;
+    zs.style.color = '#5dade2';
+  }
+
+  // Auto-fit view to known points if map layer is active
+  if (S.mapLayer !== 'none' && S.points.length > 0) {
+    fitView();
+  }
+}
+
+// ── Geo-origin (lat/lon of survey origin, manual fallback) ──
 function updateGeoStatus() {
   const el = document.getElementById('geo-origin-status');
   if (!el) return;
+  if (S.jpZone) {
+    el.textContent = `系番号 ${S.jpZone} を使用中（手動設定は不要）`;
+    el.style.color = '#2ecc71';
+    return;
+  }
   if (S.originLat == null) {
     el.textContent = '未設定';
     el.style.color = '#5a6580';
