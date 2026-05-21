@@ -488,6 +488,8 @@ body {
     <button class="m-tool-btn"        id="btn-route"    onclick="setTool('route')">路線</button>
     <button class="m-tool-btn"        id="btn-area"     onclick="setTool('area')">エリア</button>
     <button class="m-tool-btn"        id="btn-delete"   onclick="setTool('delete')">削除</button>
+    <div style="width:1px;background:#2e3555;flex-shrink:0;margin:4px 2px;"></div>
+    <button class="m-tool-btn" style="border-color:#1abc9c;color:#1abc9c;" onclick="openDrawer();switchTab('map')">🗺地図</button>
   </div>
   <div id="action-row">
     <button class="m-act-btn green"  onclick="runPlan()">▶自動</button>
@@ -501,7 +503,6 @@ body {
     <button class="m-act-btn check"  onclick="runCheck()">✔チェック</button>
     <button class="m-act-btn"        onclick="fitView()">⊡全体</button>
     <button class="m-act-btn"        onclick="openDrawer()">≡計画</button>
-    <button class="m-act-btn teal"    onclick="openDrawer();switchTab('map')">🗺地図</button>
     <button class="m-act-btn"        onclick="openMenu()">⋯</button>
   </div>
 </div>
